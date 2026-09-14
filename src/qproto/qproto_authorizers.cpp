@@ -69,7 +69,7 @@ static void RevEmuFinishAuthorization(authdata_t* authdata, const char* authStr,
 		authdata->steamId = revHash(authdata->authKey) << 1;
 	}
 	else {
-		authdata->steamId = STEAM_ID_PENDING; // macro from classic_shared.h
+		authdata->steamId = STEAM_ID_PENDING; // macro from qproto_shared.h
 		authdata->authKeyKind = AK_OTHER;
 	}
 }
