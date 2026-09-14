@@ -9,6 +9,7 @@ struct QprotoConfig
 	bool enableRevEmu2013 = true;  // RevEmu2013 (194-byte, AES+SHA256)
 	bool enableSC2009 = true;      // SteamClient 2009 (178-byte, AES+SHA256)
 	bool enableOldRevEmu = true;   // legacy 10-byte XOR ticket
+	bool enableSXEI = true;        // sXe Injected anti-cheat hardware id ("*HID" userinfo key)
 
 	// cid_* (client_id_kind, same numbering/meaning as dproto.cfg's cid_RevEmu etc. -
 	// see qproto_shared.h): which id format a *successfully authorized* client of
@@ -24,6 +25,7 @@ struct QprotoConfig
 	client_id_kind cidRevEmu2013 = CI_REAL_STEAM;
 	client_id_kind cidSC2009 = CI_REAL_STEAM;
 	client_id_kind cidOldRevEmu = CI_REAL_STEAM;
+	client_id_kind cidSXEI = CI_REAL_STEAM;
 
 	// Non-emulator client_auth_kind cases, ported from classic's client_auth.cpp
 	// (CHLTVAuthorizer/CSettiAuthorizer/CNoSteam47/48Authorizer + the CA_STEAM_PENDING
@@ -32,7 +34,19 @@ struct QprotoConfig
 	client_id_kind cidSetti = CI_STEAM_BY_IP;           // Setti monitoring bot - let it in, don't reject
 	client_id_kind cidNoSteam47 = CI_DEPRECATED;        // no ticket at all, protocol 47 - reject by default
 	client_id_kind cidNoSteam48 = CI_DEPRECATED;        // no ticket at all, protocol 48 - reject by default
-	client_id_kind cidSteamPending = CI_STEAM_ID_PENDING; // RevEmu/OldRevEmu resolved to steamId 0/1 (client's HDD serial unavailable)
+	client_id_kind cidSteamPending = CI_STEAM_ID_PENDING; // any numeric auth kind (incl. real Steam) resolved to steamId 0/1
+
+	// cid_Steam: applied even to clients who passed the engine's own *native* Steam
+	// check (classic's client_auth.cpp runs CA_STEAM through the exact same idkind
+	// switch as every emulator). Default CI_REAL_STEAM is a deliberate no-op - leaves
+	// native auth untouched. CI_STEAM_BY_IP/CI_VALVE_BY_IP are supported (recompute the
+	// id from the client's IP, same as any other cid_*). CI_DEPRECATED is accepted by
+	// the config parser but NOT enforced (see qproto_hook.cpp) - classic can cleanly
+	// reject an already-Steam-authenticated client because it also calls
+	// ISteamGameServer::SendUserDisconnect via ReHLDS's exposed Steam API; stock HLDS
+	// doesn't hand Metamod that interface, and returning failure here after the engine's
+	// own Steam_NotifyClientConnect already ran to completion is untested - not guessed at.
+	client_id_kind cidSteam = CI_REAL_STEAM;
 
 	// LoggingMode (0/1/2/3, default 2): same bitmask as dproto.cfg - rl_none=0,
 	// rl_console=1, rl_logfile=2, rl_console|rl_logfile=3. Read before the log file

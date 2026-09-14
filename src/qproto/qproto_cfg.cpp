@@ -77,6 +77,9 @@ void Qproto_Cfg_Load()
 		else if (strcasecmp(key, "EnableOldRevEmu") == 0) {
 			g_qprotoConfig.enableOldRevEmu = atoi(value) != 0;
 		}
+		else if (strcasecmp(key, "EnableSXEI") == 0) {
+			g_qprotoConfig.enableSXEI = atoi(value) != 0;
+		}
 		else if (strcasecmp(key, "LoggingMode") == 0) {
 			g_qprotoConfig.loggingMode = atoi(value);
 		}
@@ -91,6 +94,12 @@ void Qproto_Cfg_Load()
 		}
 		else if (strcasecmp(key, "cid_OldRevEmu") == 0) {
 			g_qprotoConfig.cidOldRevEmu = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_SXEI") == 0) {
+			g_qprotoConfig.cidSXEI = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_Steam") == 0) {
+			g_qprotoConfig.cidSteam = (client_id_kind)atoi(value);
 		}
 		else if (strcasecmp(key, "cid_HLTV") == 0) {
 			g_qprotoConfig.cidHLTV = (client_id_kind)atoi(value);
@@ -113,12 +122,14 @@ void Qproto_Cfg_Load()
 	// Note: this fires before Qproto_Log_Init() (we have to read LoggingMode before
 	// deciding whether to open the log file at all), so it silently no-ops here - see
 	// the "config: ..." line logged right after Qproto_Log_Init() in Meta_Attach instead.
-	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) HLTV(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
+	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Steam(cid=%d) HLTV(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
 		path,
 		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.cidRevEmu,
 		(int)g_qprotoConfig.enableRevEmu2013, (int)g_qprotoConfig.cidRevEmu2013,
 		(int)g_qprotoConfig.enableSC2009, (int)g_qprotoConfig.cidSC2009,
 		(int)g_qprotoConfig.enableOldRevEmu, (int)g_qprotoConfig.cidOldRevEmu,
+		(int)g_qprotoConfig.enableSXEI, (int)g_qprotoConfig.cidSXEI,
+		(int)g_qprotoConfig.cidSteam,
 		(int)g_qprotoConfig.cidHLTV, (int)g_qprotoConfig.cidSetti,
 		(int)g_qprotoConfig.cidNoSteam47, (int)g_qprotoConfig.cidNoSteam48,
 		(int)g_qprotoConfig.cidSteamPending,

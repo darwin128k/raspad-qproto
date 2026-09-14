@@ -4,6 +4,7 @@
 #include "qproto/qproto_cfg.h"
 #include "qproto/precompiled.h"	// Rijndael.h, sha2.h, rotl/rotr/bswap
 #include <cstring>
+#include <cstdio>	// sscanf, SXEIAuthorize
 
 // Ported from classic's classic_authorizers.cpp (GPLv3): the RevEmu-family ticket
 // format and crypto is identical across dproto/classic/qproto (same community-derived
@@ -303,6 +304,36 @@ client_auth_kind NoSteam48Authorize(authdata_t* authdata)
 	return CA_NO_STEAM_48;
 }
 
+// Ported from classic's CSXEIAuthorizer::authorize - trusts the engine-protected "*HID"
+// userinfo key (pre-extracted by the caller, see authdata_t.sxeiHidHex) as a hex hardware
+// id from the sXe Injected anti-cheat. No ticket bytes involved at all.
+client_auth_kind SXEIAuthorize(authdata_t* authdata)
+{
+	if (!g_qprotoConfig.enableSXEI)
+		return CA_UNKNOWN;
+
+	if (!authdata->sxeiHidHex || !authdata->sxeiHidHex[0])
+		return CA_UNKNOWN;
+
+	uint32_t sxeId;
+	if (sscanf(authdata->sxeiHidHex, "%X", &sxeId) != 1)
+		return CA_UNKNOWN;
+
+	if (sxeId == 0) {
+		authdata->steamId = STEAM_ID_PENDING;
+		authdata->authKeyKind = AK_OTHER;
+		authdata->authKeyLen = 0;
+	}
+	else {
+		authdata->steamId = sxeId << 1;
+		authdata->authKeyKind = AK_SXEID;
+		authdata->authKeyLen = sizeof(uint32_t);
+		memcpy(authdata->authKey, &sxeId, sizeof(sxeId));
+	}
+
+	return CA_SXEI;
+}
+
 client_auth_kind Qproto_Authorize_Client(authdata_t* authdata, bool /*sc2009RevCompat*/, bool /*forceAuthVersion2018Plus*/)
 {
 	client_auth_kind r;
@@ -311,6 +342,7 @@ client_auth_kind Qproto_Authorize_Client(authdata_t* authdata, bool /*sc2009RevC
 	// classic_Init_Authorizers): userinfo-based checks first, then ticket formats from
 	// most to least specific, with the protocol-only catch-alls tried last.
 	if ((r = HLTVAuthorize(authdata)) != CA_UNKNOWN) return r;
+	if ((r = SXEIAuthorize(authdata)) != CA_UNKNOWN) return r;
 	if ((r = SettiAuthorize(authdata)) != CA_UNKNOWN) return r;
 
 	if (g_qprotoConfig.enableRevEmu && (r = RevEmuAuthorize(authdata)) != CA_UNKNOWN) return r;

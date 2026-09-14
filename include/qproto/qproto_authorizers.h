@@ -21,6 +21,7 @@ struct authdata_t
 	// (see qproto_authorizers's own test in tests/, which links none of extdll.h).
 	int				protocol = 0;			// negotiated client protocol (47 or 48), from Info_ValueForKey(protinfo, "prot")
 	const char*		hltvHint = nullptr;		// Info_ValueForKey(userinfo, "*hltv"), or null/empty if absent
+	const char*		sxeiHidHex = nullptr;	// Info_ValueForKey(userinfo, "*HID"), or null/empty if absent (sXe Injected hardware id, hex string)
 
 	// out
 	int				idtype;			// engine WONAuthIdType-style value (AUTH_IDTYPE_LOCAL etc.), wired up when this is plugged into the real connectionless hook
@@ -44,6 +45,13 @@ client_auth_kind HLTVAuthorize(authdata_t* authdata);
 client_auth_kind SettiAuthorize(authdata_t* authdata);
 client_auth_kind NoSteam47Authorize(authdata_t* authdata);
 client_auth_kind NoSteam48Authorize(authdata_t* authdata);
+
+// Ported from classic's CSXEIAuthorizer - identifies a client running the sXe
+// Injected anti-cheat by its hardware id, carried in the engine-protected "*HID"
+// userinfo key (same trust level as "*hltv" - ordinary client code can't set keys
+// starting with '*' via a plain setinfo). Config-gated (EnableSXEI) like classic's
+// own isSXEIAuthEnabled() cvar.
+client_auth_kind SXEIAuthorize(authdata_t* authdata);
 
 // Tries all v1 authorizers in turn (RevEmu family only); returns CA_UNKNOWN if none match.
 // sc2009RevCompat / forceAuthVersion2018Plus mirror dproto.cfg's SC2009_RevCompatMode and

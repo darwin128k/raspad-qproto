@@ -41,6 +41,7 @@
 namespace {
 
 const uintptr_t kNetworkUseridOffset = 0x4a90; // client_t::network_userid, confirmed via DWARF
+const uint32_t kIpGenKey = 0xA95CE2B9; // matches classic's IPGEN_KEY convention
 
 typedef int (*SteamNotifyClientConnect_t)(void* client, char* authBuf, int len);
 typedef char* (*CmdArgv_t)(int);
@@ -126,6 +127,8 @@ client_id_kind CidForAuthKind(client_auth_kind kind)
 		case CA_NO_STEAM_47: return g_qprotoConfig.cidNoSteam47;
 		case CA_NO_STEAM_48: return g_qprotoConfig.cidNoSteam48;
 		case CA_STEAM_PENDING: return g_qprotoConfig.cidSteamPending;
+		case CA_SXEI: return g_qprotoConfig.cidSXEI;
+		case CA_STEAM: return g_qprotoConfig.cidSteam;
 		default: return CI_UNKNOWN;
 	}
 }
@@ -133,10 +136,13 @@ client_id_kind CidForAuthKind(client_auth_kind kind)
 // Mirrors classic's classic_utils.cpp IsNumericAuthKind(), trimmed to what qproto can
 // actually produce - HLTV/Setti/NoSteam47/NoSteam48 are deliberately excluded there
 // too (they're fixed-identity kinds, not "this steamid might just be unresolved yet").
+// CA_STEAM is included, matching classic exactly - even a native Steam auth can in
+// principle resolve to a pending id.
 bool IsNumericAuthKind(client_auth_kind kind)
 {
 	switch (kind) {
 		case CA_OLD_REVEMU: case CA_REVEMU: case CA_STEAMCLIENT_2009: case CA_REVEMU_2013:
+		case CA_SXEI: case CA_STEAM:
 			return true;
 		default:
 			return false;
@@ -155,6 +161,8 @@ const char* classic_GetAuthorizerName_stub(client_auth_kind kind)
 		case CA_NO_STEAM_47: return "NoSteam47";
 		case CA_NO_STEAM_48: return "NoSteam48";
 		case CA_STEAM_PENDING: return "Steam_PENDING";
+		case CA_SXEI: return "sXe";
+		case CA_STEAM: return "Steam";
 		default: return "unknown";
 	}
 }
@@ -170,6 +178,7 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	// come from Cmd_Argv/Info_ValueForKey, unaffected by the Steam_NotifyClientConnect patch).
 	int protocol = 0;
 	const char* hltvHint = nullptr;
+	const char* sxeiHidHex = nullptr;
 	if (g_Cmd_Argv) {
 		char* protinfo = g_Cmd_Argv(3);
 		char* userinfo = g_Cmd_Argv(4);
@@ -188,7 +197,9 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 		}
 		if (g_Info_ValueForKey && userinfo) {
 			char keyHltv[] = "*hltv";
+			char keyHid[] = "*HID";
 			hltvHint = g_Info_ValueForKey(userinfo, keyHltv);
+			sxeiHidHex = g_Info_ValueForKey(userinfo, keyHid);
 		}
 	}
 
@@ -199,18 +210,48 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 
 	Qproto_Log("native Steam_NotifyClientConnect returned %d", result);
 
-	if (result) {
-		return result; // native Steam validation already succeeded - nothing to do
-	}
-
 	uint8_t* base = (uint8_t*)client + kNetworkUseridOffset;
 	uint32_t clientIp = *(uint32_t*)(base + 0xc); // already filled in by SV_ConnectClient before this call runs
+
+	if (result) {
+		// Real/native Steam auth succeeded. classic still runs this through the same
+		// cid_* pipeline as every emulator (client_auth.cpp: authkind=CA_STEAM, then the
+		// idkind switch applies uniformly) instead of passing it through unconditionally -
+		// e.g. cid_Steam=3/4 can mask even a real Steam player behind an IP-derived id.
+		// We mirror that for the non-destructive cases (pending reclassification,
+		// STEAM_BY_IP/VALVE_BY_IP override) but do NOT enforce cid_Steam=Deprecated -
+		// see the comment on QprotoConfig::cidSteam for why that's not safely portable
+		// without further engine investigation.
+		uint32_t nativeSteamId = (uint32_t)(*(uint64_t*)(base + 0x4) & 0xFFFFFFFFu);
+		client_auth_kind kind = (nativeSteamId <= STEAM_ID_PENDING) ? CA_STEAM_PENDING : CA_STEAM;
+		client_id_kind cid = CidForAuthKind(kind);
+
+		if (cid == CI_STEAM_BY_IP || cid == CI_VALVE_BY_IP) {
+			int authIdType = MapClientIdKindToAuthIdType(cid);
+			uint32_t finalSteamId = clientIp ^ kIpGenKey;
+			*(int32_t*)(base + 0x0) = authIdType;
+			*(uint64_t*)(base + 0x4) = (uint64_t)finalSteamId;
+			Qproto_Log("native Steam auth ok (%s), cid=%d overrides id -> idtype=%d steamid=%u",
+				classic_GetAuthorizerName_stub(kind), (int)cid, authIdType, finalSteamId);
+		}
+		else if (cid == CI_DEPRECATED) {
+			Qproto_Log("native Steam auth ok (%s), cid=%d (Deprecated) requested but rejecting an "
+				"already-authenticated Steam client isn't implemented - allowing through unmodified",
+				classic_GetAuthorizerName_stub(kind), (int)cid);
+		}
+		else {
+			Qproto_Log("native Steam auth ok (%s), cid=%d - no override configured", classic_GetAuthorizerName_stub(kind), (int)cid);
+		}
+
+		return result;
+	}
 
 	authdata_t authdata = {};
 	authdata.authTicket = (const uint8_t*)authBuf;
 	authdata.ticketLen = (size_t)(authBuf ? len : 0);
 	authdata.protocol = protocol;
 	authdata.hltvHint = hltvHint;
+	authdata.sxeiHidHex = sxeiHidHex;
 
 	if (authBuf && len > 0) {
 		Qproto_Log_HexDump("ticket bytes", authBuf, len);
@@ -247,7 +288,6 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	// of which authorizer produced the classification).
 	uint32_t finalSteamId = authdata.steamId;
 	if (cid == CI_STEAM_BY_IP || cid == CI_VALVE_BY_IP) {
-		const uint32_t kIpGenKey = 0xA95CE2B9; // matches classic's IPGEN_KEY
 		finalSteamId = clientIp ^ kIpGenKey;
 	}
 

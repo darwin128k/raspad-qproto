@@ -50,7 +50,24 @@ int main()
 		if (!ok) failures++;
 	}
 
-	// 3) NoSteam47/48: protocol-only, ticket content irrelevant.
+	// 3) SXEI: hex hardware id from the engine-protected "*HID" userinfo key.
+	{
+		authdata_t authdata = {};
+		authdata.sxeiHidHex = "1A2B3C4D";
+		client_auth_kind kind = SXEIAuthorize(&authdata);
+		bool ok = kind == CA_SXEI && authdata.steamId == (0x1A2B3C4Du << 1);
+		printf("[%s] SXEIAuthorize decodes hex *HID (steamid=%u)\n", ok ? "OK" : "FAIL", authdata.steamId);
+		if (!ok) failures++;
+	}
+	{
+		authdata_t authdata = {};
+		authdata.sxeiHidHex = "not-hex!";
+		bool ok = SXEIAuthorize(&authdata) == CA_UNKNOWN;
+		printf("[%s] SXEIAuthorize rejects unparseable *HID\n", ok ? "OK" : "FAIL");
+		if (!ok) failures++;
+	}
+
+	// 4) NoSteam47/48: protocol-only, ticket content irrelevant.
 	{
 		authdata_t authdata = {};
 		authdata.protocol = 47;
@@ -66,7 +83,7 @@ int main()
 		if (!ok) failures++;
 	}
 
-	// 4) Dispatch order: a client with *hltv set wins even if it also happens to carry
+	// 5) Dispatch order: a client with *hltv set wins even if it also happens to carry
 	//    a Setti-shaped ticket - HLTV is checked first, exactly like classic's own
 	//    authorizer registration order.
 	{
@@ -83,7 +100,7 @@ int main()
 		if (!ok) failures++;
 	}
 
-	// 5) Dispatch fallback: no ticket, no hltv hint, protocol=47 -> CA_NO_STEAM_47.
+	// 6) Dispatch fallback: no ticket, no hltv hint, protocol=47 -> CA_NO_STEAM_47.
 	{
 		authdata_t authdata = {};
 		authdata.protocol = 47;
