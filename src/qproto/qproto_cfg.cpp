@@ -80,21 +80,36 @@ void Qproto_Cfg_Load()
 		else if (strcasecmp(key, "EnableOldRevEmu") == 0) {
 			g_qprotoConfig.enableOldRevEmu = atoi(value) != 0;
 		}
-		else if (strcasecmp(key, "EnableLogging") == 0) {
-			g_qprotoConfig.enableLogging = atoi(value) != 0;
+		else if (strcasecmp(key, "LoggingMode") == 0) {
+			g_qprotoConfig.loggingMode = atoi(value);
+		}
+		else if (strcasecmp(key, "cid_RevEmu") == 0) {
+			g_qprotoConfig.cidRevEmu = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_RevEmu2013") == 0) {
+			g_qprotoConfig.cidRevEmu2013 = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_SC2009") == 0) {
+			g_qprotoConfig.cidSC2009 = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_OldRevEmu") == 0) {
+			g_qprotoConfig.cidOldRevEmu = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_IPFallback") == 0) {
+			g_qprotoConfig.cidIPFallback = (client_id_kind)atoi(value);
 		}
 	}
 	fclose(f);
 
-	// Note: this fires before Qproto_Log_Init() (we have to read EnableLogging before
+	// Note: this fires before Qproto_Log_Init() (we have to read LoggingMode before
 	// deciding whether to open the log file at all), so it silently no-ops here - see
 	// the "config: ..." line logged right after Qproto_Log_Init() in Meta_Attach instead.
-	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d RevEmu2013=%d SC2009=%d OldRevEmu=%d AllowIPFallback=%d Logging=%d",
+	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) AllowIPFallback=%d(cid=%d) LoggingMode=%d",
 		path,
-		(int)g_qprotoConfig.enableRevEmu,
-		(int)g_qprotoConfig.enableRevEmu2013,
-		(int)g_qprotoConfig.enableSC2009,
-		(int)g_qprotoConfig.enableOldRevEmu,
-		(int)g_qprotoConfig.allowIpFallback,
-		(int)g_qprotoConfig.enableLogging);
+		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.cidRevEmu,
+		(int)g_qprotoConfig.enableRevEmu2013, (int)g_qprotoConfig.cidRevEmu2013,
+		(int)g_qprotoConfig.enableSC2009, (int)g_qprotoConfig.cidSC2009,
+		(int)g_qprotoConfig.enableOldRevEmu, (int)g_qprotoConfig.cidOldRevEmu,
+		(int)g_qprotoConfig.allowIpFallback, (int)g_qprotoConfig.cidIPFallback,
+		g_qprotoConfig.loggingMode);
 }

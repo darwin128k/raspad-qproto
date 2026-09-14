@@ -60,19 +60,18 @@ C_DLLEXPORT int Meta_Attach(PLUG_LOADTIME /*now*/, META_FUNCTIONS* pFunctionTabl
 	memcpy(pFunctionTable, &gMetaFunctionTable, sizeof(META_FUNCTIONS));
 	gpGamedllFuncs = pGamedllFuncs;
 
-	// Config must be read before the log file is opened - EnableLogging decides
-	// whether Qproto_Log_Init() runs at all, so qproto.log is never even created
-	// when logging is turned off.
+	// Config must be read before the log file is opened - LoggingMode's rl_logfile
+	// bit decides whether Qproto_Log_Init() creates qproto.log at all.
 	Qproto_Cfg_Load();
-
-	if (g_qprotoConfig.enableLogging) {
-		Qproto_Log_Init();
-	}
+	Qproto_Log_Init(g_qprotoConfig.loggingMode);
 	Qproto_Log("Meta_Attach called, installing hook...");
-	Qproto_Log("config: RevEmu=%d RevEmu2013=%d SC2009=%d OldRevEmu=%d AllowIPFallback=%d",
-		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.enableRevEmu2013,
-		(int)g_qprotoConfig.enableSC2009, (int)g_qprotoConfig.enableOldRevEmu,
-		(int)g_qprotoConfig.allowIpFallback);
+	Qproto_Log("config: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) AllowIPFallback=%d(cid=%d) LoggingMode=%d",
+		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.cidRevEmu,
+		(int)g_qprotoConfig.enableRevEmu2013, (int)g_qprotoConfig.cidRevEmu2013,
+		(int)g_qprotoConfig.enableSC2009, (int)g_qprotoConfig.cidSC2009,
+		(int)g_qprotoConfig.enableOldRevEmu, (int)g_qprotoConfig.cidOldRevEmu,
+		(int)g_qprotoConfig.allowIpFallback, (int)g_qprotoConfig.cidIPFallback,
+		g_qprotoConfig.loggingMode);
 
 	if (!Qproto_Hook_Install()) {
 		LOG_ERROR(PLID, "Failed to install Steam_NotifyClientConnect hook");

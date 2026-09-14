@@ -2,6 +2,7 @@
 #include <extdll.h>
 #include <enginecallback.h>
 #include "qproto/qproto_log.h"
+#include "qproto/qproto_shared.h"
 
 #include <cstdio>
 #include <cstdarg>
@@ -10,11 +11,14 @@
 
 namespace {
 FILE* g_logFile;
+int g_mode; // bitmask of qproto_log_mode
 }
 
-void Qproto_Log_Init()
+void Qproto_Log_Init(int loggingMode)
 {
-	if (g_logFile) return;
+	g_mode = loggingMode;
+
+	if (!(g_mode & rl_logfile) || g_logFile) return;
 
 	char gameDir[256] = {};
 	(*g_engfuncs.pfnGetGameDir)(gameDir);
@@ -40,23 +44,30 @@ void Qproto_Log_Close()
 
 void Qproto_Log(const char* fmt, ...)
 {
-	if (!g_logFile) return;
+	if (!(g_mode & (rl_console | rl_logfile))) return;
 
-	time_t t = time(nullptr);
-	struct tm* lt = localtime(&t);
-	fprintf(g_logFile, "[%02d:%02d:%02d] ", lt->tm_hour, lt->tm_min, lt->tm_sec);
-
+	char buf[1024];
 	va_list ap;
 	va_start(ap, fmt);
-	vfprintf(g_logFile, fmt, ap);
+	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
-	fprintf(g_logFile, "\n");
+	if ((g_mode & rl_logfile) && g_logFile) {
+		time_t t = time(nullptr);
+		struct tm* lt = localtime(&t);
+		fprintf(g_logFile, "[%02d:%02d:%02d] %s\n", lt->tm_hour, lt->tm_min, lt->tm_sec, buf);
+	}
+
+	if (g_mode & rl_console) {
+		char consoleBuf[1040];
+		snprintf(consoleBuf, sizeof(consoleBuf), "[QPROTO] %s\n", buf);
+		(*g_engfuncs.pfnServerPrint)(consoleBuf);
+	}
 }
 
 void Qproto_Log_HexDump(const char* label, const void* data, int len)
 {
-	if (!g_logFile) return;
+	if (!(g_mode & (rl_console | rl_logfile))) return;
 
 	const unsigned char* p = (const unsigned char*)data;
 	Qproto_Log("%s (%d bytes):", label, len);

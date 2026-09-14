@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
+
 // Game info
 #define MAX_PLAYERS					32
 #define HLDS_APPID					10

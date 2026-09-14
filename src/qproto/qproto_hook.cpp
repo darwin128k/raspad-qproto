@@ -76,9 +76,54 @@ void RestoreBytes(void* target, const unsigned char* saved)
 }
 
 // AUTH_IDTYPE from engine's userid.h: STEAM=1, VALVE=2, LOCAL=3.
-// dproto.cfg's cid_RevEmu default (=1, "real STEAM_xx:xx:xx") is what admins on this
-// server already tuned for, so match that convention rather than inventing a new one.
-const int kAuthIdTypeSteam = 1;
+enum { AUTH_IDTYPE_STEAM = 1, AUTH_IDTYPE_VALVE = 2, AUTH_IDTYPE_LOCAL = 3 };
+
+// Maps a dproto.cfg-style cid_* value (client_id_kind, qproto_shared.h) to what the
+// engine's own SV_GetIDString can actually render for us, since we write into
+// client_t::network_userid and let the *unmodified* engine format the final string
+// (see file header) rather than building "STEAM_x:y:z" ourselves the way classic
+// does with full ReHLDS hook access. SV_GetIDString only branches on idtype 1/2/3 -
+// everything CI_*_STEAM-ish collapses to STEAM, everything CI_*_VALVE-ish to VALVE
+// (the LAN/PENDING sub-strings then come for free from the engine's own sv_lan and
+// zero-steamid checks). CI_DEPRECATED means "reject", matching dproto.cfg exactly.
+int MapClientIdKindToAuthIdType(client_id_kind cid)
+{
+	switch (cid) {
+		case CI_REAL_STEAM:
+		case CI_STEAM_BY_IP:
+		case CI_STEAM_ID_LAN:
+		case CI_STEAM_ID_PENDING:
+		case CI_STEAM_666_88_666:
+			return AUTH_IDTYPE_STEAM;
+
+		case CI_REAL_VALVE:
+		case CI_VALVE_BY_IP:
+		case CI_VALVE_ID_LAN:
+		case CI_VALVE_ID_PENDING:
+			return AUTH_IDTYPE_VALVE;
+
+		case CI_HLTV:
+			return AUTH_IDTYPE_LOCAL;
+
+		case CI_DEPRECATED:
+			return -1; // reject
+
+		default: // CI_UNKNOWN, CI_RESERVED, CI_MAX - no sane rendering, be safe and reject
+			return -1;
+	}
+}
+
+client_id_kind CidForAuthKind(client_auth_kind kind)
+{
+	switch (kind) {
+		case CA_REVEMU: return g_qprotoConfig.cidRevEmu;
+		case CA_REVEMU_2013: return g_qprotoConfig.cidRevEmu2013;
+		case CA_STEAMCLIENT_2009: return g_qprotoConfig.cidSC2009;
+		case CA_OLD_REVEMU: return g_qprotoConfig.cidOldRevEmu;
+		case CA_UNKNOWN: return g_qprotoConfig.cidIPFallback; // IP-fallback path
+		default: return CI_UNKNOWN;
+	}
+}
 
 const char* classic_GetAuthorizerName_stub(client_auth_kind kind)
 {
@@ -154,10 +199,19 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 			clientIp, authdata.steamId);
 	}
 
-	*(int32_t*)(base + 0x0) = kAuthIdTypeSteam;
+	client_id_kind cid = CidForAuthKind(kind);
+	int authIdType = MapClientIdKindToAuthIdType(cid);
+	if (authIdType < 0) {
+		Qproto_Log("%s authorized but cid=%d (dproto.cfg-style) means reject - keeping native rejection",
+			classic_GetAuthorizerName_stub(kind), (int)cid);
+		return 0;
+	}
+
+	*(int32_t*)(base + 0x0) = authIdType;
 	*(uint64_t*)(base + 0x4) = (uint64_t)authdata.steamId;
 
-	Qproto_Log("emulated auth ok (%s), steamid=%u", classic_GetAuthorizerName_stub(kind), authdata.steamId);
+	Qproto_Log("emulated auth ok (%s), cid=%d -> idtype=%d, steamid=%u",
+		classic_GetAuthorizerName_stub(kind), (int)cid, authIdType, authdata.steamId);
 
 	return 1; // tell SV_ConnectClient the connection is fine after all
 }
