@@ -22,6 +22,7 @@ endfunction()
 qproto_add_test(crypto_selftest ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 qproto_add_test(authorizers_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 qproto_add_test(oldrevemu_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
+qproto_add_test(classify_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 
 # Exercises the actual mprotect+JMP detour mechanism against a real engine_i486.so
 # via dlopen - never calls through the patched function (see the file's own header

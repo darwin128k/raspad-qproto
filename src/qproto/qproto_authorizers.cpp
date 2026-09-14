@@ -234,14 +234,92 @@ client_auth_kind OldRevEmuAuthorize(authdata_t* authdata)
 	return CA_OLD_REVEMU;
 }
 
+// Ported from classic's CHLTVAuthorizer::authorize (classic_authorizers.cpp) - HLTV
+// proxies are recognized by a non-empty "*hltv" userinfo key, not by ticket content,
+// and are checked ahead of everything else (same priority classic's own authorizer
+// registration order uses).
+client_auth_kind HLTVAuthorize(authdata_t* authdata)
+{
+	if (!authdata->hltvHint || !authdata->hltvHint[0])
+		return CA_UNKNOWN;
+
+	authdata->steamId = STEAM_ID_LAN;
+	authdata->authKeyKind = AK_OTHER;
+	authdata->authKeyLen = 0;
+	return CA_HLTV;
+}
+
+// Ported verbatim from classic's CSettiAuthorizer::authorize - exact ticket length and
+// magic constants (credited there to "vityan666"). Setti is a monitoring/promotion
+// bot, not an attacker - it must be recognized and let through, not silently dropped
+// into a generic reject bucket.
+client_auth_kind SettiAuthorize(authdata_t* authdata)
+{
+	enum {
+		TICKET_LEN = 0x300,
+		SETTI_KEY1 = 0xD4CA7F7B,
+		SETTI_KEY2 = 0xC7DB6023,
+		SETTI_KEY3 = 0x6D6A2E1F,
+		SETTI_KEY4 = 0xB4C43105,
+	};
+
+	if (authdata->ticketLen != TICKET_LEN)
+		return CA_UNKNOWN;
+
+	const uint32_t* ikey = (const uint32_t*)authdata->authTicket;
+	if (!(ikey[0] == SETTI_KEY1 || ikey[1] == SETTI_KEY2 || ikey[2] == SETTI_KEY3 || ikey[5] == SETTI_KEY4))
+		return CA_UNKNOWN;
+
+	authdata->steamId = STEAM_ID_LAN;
+	authdata->authKeyKind = AK_OTHER;
+	authdata->authKeyLen = 0;
+	return CA_SETTI;
+}
+
+// Ported from classic's CNoSteam47Authorizer/CNoSteam48Authorizer - the catch-all for
+// "native Steam auth failed and no ticket format above matched", split by protocol
+// version exactly like dproto.cfg's separate cid_NoSteam47/cid_NoSteam48. Deliberately
+// does NOT look at ticket bytes at all (mirrors classic exactly) - garbage/unrecognized
+// ticket content is treated the same as no ticket, protocol is the only signal.
+client_auth_kind NoSteam47Authorize(authdata_t* authdata)
+{
+	if (authdata->protocol != 47)
+		return CA_UNKNOWN;
+
+	authdata->steamId = STEAM_ID_LAN;
+	authdata->authKeyKind = AK_OTHER;
+	authdata->authKeyLen = 0;
+	return CA_NO_STEAM_47;
+}
+
+client_auth_kind NoSteam48Authorize(authdata_t* authdata)
+{
+	if (authdata->protocol != 48)
+		return CA_UNKNOWN;
+
+	authdata->steamId = STEAM_ID_LAN;
+	authdata->authKeyKind = AK_OTHER;
+	authdata->authKeyLen = 0;
+	return CA_NO_STEAM_48;
+}
+
 client_auth_kind Qproto_Authorize_Client(authdata_t* authdata, bool /*sc2009RevCompat*/, bool /*forceAuthVersion2018Plus*/)
 {
 	client_auth_kind r;
+
+	// Order matches classic's own authorizer registration order (classic_authorizers.cpp
+	// classic_Init_Authorizers): userinfo-based checks first, then ticket formats from
+	// most to least specific, with the protocol-only catch-alls tried last.
+	if ((r = HLTVAuthorize(authdata)) != CA_UNKNOWN) return r;
+	if ((r = SettiAuthorize(authdata)) != CA_UNKNOWN) return r;
 
 	if (g_qprotoConfig.enableRevEmu && (r = RevEmuAuthorize(authdata)) != CA_UNKNOWN) return r;
 	if (g_qprotoConfig.enableRevEmu2013 && (r = RevEmu2013Authorize(authdata)) != CA_UNKNOWN) return r;
 	if (g_qprotoConfig.enableSC2009 && (r = SteamClient2009Authorize(authdata)) != CA_UNKNOWN) return r;
 	if (g_qprotoConfig.enableOldRevEmu && (r = OldRevEmuAuthorize(authdata)) != CA_UNKNOWN) return r;
+
+	if ((r = NoSteam47Authorize(authdata)) != CA_UNKNOWN) return r;
+	if ((r = NoSteam48Authorize(authdata)) != CA_UNKNOWN) return r;
 
 	return CA_UNKNOWN;
 }

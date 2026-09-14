@@ -65,10 +65,7 @@ void Qproto_Cfg_Load()
 		char* keyEnd = eq - 1;
 		while (keyEnd >= key && (*keyEnd == ' ' || *keyEnd == '\t')) *keyEnd-- = '\0';
 
-		if (strcasecmp(key, "AllowIPFallback") == 0) {
-			g_qprotoConfig.allowIpFallback = atoi(value) != 0;
-		}
-		else if (strcasecmp(key, "EnableRevEmu") == 0) {
+		if (strcasecmp(key, "EnableRevEmu") == 0) {
 			g_qprotoConfig.enableRevEmu = atoi(value) != 0;
 		}
 		else if (strcasecmp(key, "EnableRevEmu2013") == 0) {
@@ -95,8 +92,20 @@ void Qproto_Cfg_Load()
 		else if (strcasecmp(key, "cid_OldRevEmu") == 0) {
 			g_qprotoConfig.cidOldRevEmu = (client_id_kind)atoi(value);
 		}
-		else if (strcasecmp(key, "cid_IPFallback") == 0) {
-			g_qprotoConfig.cidIPFallback = (client_id_kind)atoi(value);
+		else if (strcasecmp(key, "cid_HLTV") == 0) {
+			g_qprotoConfig.cidHLTV = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_Setti") == 0) {
+			g_qprotoConfig.cidSetti = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_NoSteam47") == 0) {
+			g_qprotoConfig.cidNoSteam47 = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_NoSteam48") == 0) {
+			g_qprotoConfig.cidNoSteam48 = (client_id_kind)atoi(value);
+		}
+		else if (strcasecmp(key, "cid_SteamPending") == 0) {
+			g_qprotoConfig.cidSteamPending = (client_id_kind)atoi(value);
 		}
 	}
 	fclose(f);
@@ -104,12 +113,14 @@ void Qproto_Cfg_Load()
 	// Note: this fires before Qproto_Log_Init() (we have to read LoggingMode before
 	// deciding whether to open the log file at all), so it silently no-ops here - see
 	// the "config: ..." line logged right after Qproto_Log_Init() in Meta_Attach instead.
-	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) AllowIPFallback=%d(cid=%d) LoggingMode=%d",
+	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) HLTV(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
 		path,
 		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.cidRevEmu,
 		(int)g_qprotoConfig.enableRevEmu2013, (int)g_qprotoConfig.cidRevEmu2013,
 		(int)g_qprotoConfig.enableSC2009, (int)g_qprotoConfig.cidSC2009,
 		(int)g_qprotoConfig.enableOldRevEmu, (int)g_qprotoConfig.cidOldRevEmu,
-		(int)g_qprotoConfig.allowIpFallback, (int)g_qprotoConfig.cidIPFallback,
+		(int)g_qprotoConfig.cidHLTV, (int)g_qprotoConfig.cidSetti,
+		(int)g_qprotoConfig.cidNoSteam47, (int)g_qprotoConfig.cidNoSteam48,
+		(int)g_qprotoConfig.cidSteamPending,
 		g_qprotoConfig.loggingMode);
 }

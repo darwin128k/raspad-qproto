@@ -28,6 +28,7 @@
 #include <sys/mman.h>
 #include <cstring>
 #include <cstdint>
+#include <cstdlib>
 #include <cmath>	// must precede extdll.h: its min/max macros break <limits>/<cmath> if pulled in after
 
 #include <extdll.h>
@@ -120,8 +121,25 @@ client_id_kind CidForAuthKind(client_auth_kind kind)
 		case CA_REVEMU_2013: return g_qprotoConfig.cidRevEmu2013;
 		case CA_STEAMCLIENT_2009: return g_qprotoConfig.cidSC2009;
 		case CA_OLD_REVEMU: return g_qprotoConfig.cidOldRevEmu;
-		case CA_UNKNOWN: return g_qprotoConfig.cidIPFallback; // IP-fallback path
+		case CA_HLTV: return g_qprotoConfig.cidHLTV;
+		case CA_SETTI: return g_qprotoConfig.cidSetti;
+		case CA_NO_STEAM_47: return g_qprotoConfig.cidNoSteam47;
+		case CA_NO_STEAM_48: return g_qprotoConfig.cidNoSteam48;
+		case CA_STEAM_PENDING: return g_qprotoConfig.cidSteamPending;
 		default: return CI_UNKNOWN;
+	}
+}
+
+// Mirrors classic's classic_utils.cpp IsNumericAuthKind(), trimmed to what qproto can
+// actually produce - HLTV/Setti/NoSteam47/NoSteam48 are deliberately excluded there
+// too (they're fixed-identity kinds, not "this steamid might just be unresolved yet").
+bool IsNumericAuthKind(client_auth_kind kind)
+{
+	switch (kind) {
+		case CA_OLD_REVEMU: case CA_REVEMU: case CA_STEAMCLIENT_2009: case CA_REVEMU_2013:
+			return true;
+		default:
+			return false;
 	}
 }
 
@@ -132,7 +150,11 @@ const char* classic_GetAuthorizerName_stub(client_auth_kind kind)
 		case CA_REVEMU_2013: return "RevEmu2013";
 		case CA_STEAMCLIENT_2009: return "SC2009";
 		case CA_OLD_REVEMU: return "OldRevEmu";
-		case CA_UNKNOWN: return "IP-fallback";
+		case CA_HLTV: return "HLTV";
+		case CA_SETTI: return "Setti";
+		case CA_NO_STEAM_47: return "NoSteam47";
+		case CA_NO_STEAM_48: return "NoSteam48";
+		case CA_STEAM_PENDING: return "Steam_PENDING";
 		default: return "unknown";
 	}
 }
@@ -141,8 +163,13 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 {
 	Qproto_Log("hook fired: client=%p authBuf=%p len=%d", client, (void*)authBuf, len);
 
-	// Debug: dump the connect command's info-string fields too, in case this client's
-	// ticket lives there (as text) instead of / in addition to the trailing raw bytes.
+	// protocol/hltvHint come from the connect command's info-strings, not the ticket -
+	// needed below by HLTVAuthorize/NoSteam47Authorize/NoSteam48Authorize
+	// (qproto_authorizers.cpp), ported from classic's SV_CheckKeyInfo_hook ("prot" key)
+	// and CHLTVAuthorizer ("*hltv" key). Extracted once, before the native call (these
+	// come from Cmd_Argv/Info_ValueForKey, unaffected by the Steam_NotifyClientConnect patch).
+	int protocol = 0;
+	const char* hltvHint = nullptr;
 	if (g_Cmd_Argv) {
 		char* protinfo = g_Cmd_Argv(3);
 		char* userinfo = g_Cmd_Argv(4);
@@ -151,10 +178,17 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 		if (g_Info_ValueForKey && protinfo) {
 			char keyCdkey[] = "cdkey";
 			char keyRaw[] = "raw";
+			char keyProt[] = "prot";
 			char* cdkey = g_Info_ValueForKey(protinfo, keyCdkey);
 			char* raw = g_Info_ValueForKey(protinfo, keyRaw);
+			char* prot = g_Info_ValueForKey(protinfo, keyProt);
 			Qproto_Log("protinfo cdkey='%s' (len=%d)", cdkey ? cdkey : "", cdkey ? (int)strlen(cdkey) : -1);
 			Qproto_Log("protinfo raw='%s' (len=%d)", raw ? raw : "", raw ? (int)strlen(raw) : -1);
+			protocol = prot ? atoi(prot) : 0;
+		}
+		if (g_Info_ValueForKey && userinfo) {
+			char keyHltv[] = "*hltv";
+			hltvHint = g_Info_ValueForKey(userinfo, keyHltv);
 		}
 	}
 
@@ -173,30 +207,30 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	uint32_t clientIp = *(uint32_t*)(base + 0xc); // already filled in by SV_ConnectClient before this call runs
 
 	authdata_t authdata = {};
-	client_auth_kind kind = CA_UNKNOWN;
+	authdata.authTicket = (const uint8_t*)authBuf;
+	authdata.ticketLen = (size_t)(authBuf ? len : 0);
+	authdata.protocol = protocol;
+	authdata.hltvHint = hltvHint;
 
 	if (authBuf && len > 0) {
 		Qproto_Log_HexDump("ticket bytes", authBuf, len);
-		authdata.authTicket = (const uint8_t*)authBuf;
-		authdata.ticketLen = (size_t)len;
-		kind = Qproto_Authorize_Client(&authdata, true, true);
 	}
 
-	if (kind == CA_UNKNOWN) {
-		// No recognizable structured ticket (RevEmu/RevEmu2013/SC2009 all sign their
-		// ticket with a "rev" magic - see qproto_authorizers.cpp). This branch accepts
-		// *any* client whose real Steam check failed, not specifically RevEmu users -
-		// that's an admin policy choice (dproto.cfg has the same idea via
-		// cid_NoSteam47/48=4, VALVE_by_IP), not a safe default, so it's config-gated.
-		if (!g_qprotoConfig.allowIpFallback) {
-			Qproto_Log("no structured ticket and AllowIPFallback=0 in qproto.cfg - keeping native rejection");
-			return 0;
-		}
+	client_auth_kind kind = Qproto_Authorize_Client(&authdata, true, true);
 
-		const uint32_t kIpGenKey = 0xA95CE2B9; // matches classic's IPGEN_KEY convention
-		authdata.steamId = clientIp ^ kIpGenKey;
-		Qproto_Log("no structured ticket - falling back to IP-based id (clientip=%08x -> steamid=%u)",
-			clientIp, authdata.steamId);
+	if (kind == CA_UNKNOWN) {
+		Qproto_Log("no authorizer matched (protocol=%d, ticketLen=%d) - keeping native rejection",
+			authdata.protocol, (int)authdata.ticketLen);
+		return 0;
+	}
+
+	// Reclassify to CA_STEAM_PENDING when the resolved steamId came back as
+	// STEAM_ID_LAN(0)/STEAM_ID_PENDING(1) - i.e. the client's HDD serial/volume ID
+	// wasn't available - so it gets its own cid_SteamPending rule instead of the
+	// per-emulator one. Mirrors classic's client_auth.cpp IsNumericAuthKind()+IsValidId()
+	// check; HLTV/Setti/NoSteam47/48 are excluded on purpose (see IsNumericAuthKind above).
+	if (IsNumericAuthKind(kind) && authdata.steamId <= STEAM_ID_PENDING) {
+		kind = CA_STEAM_PENDING;
 	}
 
 	client_id_kind cid = CidForAuthKind(kind);
@@ -207,11 +241,21 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 		return 0;
 	}
 
+	// CI_STEAM_BY_IP/CI_VALVE_BY_IP override whatever steamId the authorizer computed
+	// and derive a fresh one from the client's IP instead - mirrors classic's
+	// client_auth.cpp SteamByIp() switch on the *resolved* idkind (applies regardless
+	// of which authorizer produced the classification).
+	uint32_t finalSteamId = authdata.steamId;
+	if (cid == CI_STEAM_BY_IP || cid == CI_VALVE_BY_IP) {
+		const uint32_t kIpGenKey = 0xA95CE2B9; // matches classic's IPGEN_KEY
+		finalSteamId = clientIp ^ kIpGenKey;
+	}
+
 	*(int32_t*)(base + 0x0) = authIdType;
-	*(uint64_t*)(base + 0x4) = (uint64_t)authdata.steamId;
+	*(uint64_t*)(base + 0x4) = (uint64_t)finalSteamId;
 
 	Qproto_Log("emulated auth ok (%s), cid=%d -> idtype=%d, steamid=%u",
-		classic_GetAuthorizerName_stub(kind), (int)cid, authIdType, authdata.steamId);
+		classic_GetAuthorizerName_stub(kind), (int)cid, authIdType, finalSteamId);
 
 	return 1; // tell SV_ConnectClient the connection is fine after all
 }

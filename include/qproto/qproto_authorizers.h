@@ -14,6 +14,14 @@ struct authdata_t
 	const uint8_t*	authTicket;
 	size_t			ticketLen;
 
+	// Context needed by the non-ticket authorizers below (HLTV/NoSteam47/NoSteam48),
+	// ported from classic's own authdata_t (classic_authorizers.h). Pre-extracted by
+	// the caller (qproto_hook.cpp, which has engine function pointers) rather than
+	// looked up in here, so this file stays engine-free and unit-testable in isolation
+	// (see qproto_authorizers's own test in tests/, which links none of extdll.h).
+	int				protocol = 0;			// negotiated client protocol (47 or 48), from Info_ValueForKey(protinfo, "prot")
+	const char*		hltvHint = nullptr;		// Info_ValueForKey(userinfo, "*hltv"), or null/empty if absent
+
 	// out
 	int				idtype;			// engine WONAuthIdType-style value (AUTH_IDTYPE_LOCAL etc.), wired up when this is plugged into the real connectionless hook
 	uint32_t		steamId;
@@ -28,6 +36,14 @@ client_auth_kind RevEmuAuthorize(authdata_t* authdata);
 client_auth_kind RevEmu2013Authorize(authdata_t* authdata);
 client_auth_kind SteamClient2009Authorize(authdata_t* authdata);
 client_auth_kind OldRevEmuAuthorize(authdata_t* authdata);
+
+// Ported from classic's CHLTVAuthorizer/CSettiAuthorizer/CNoSteam47Authorizer/
+// CNoSteam48Authorizer (classic_authorizers.cpp) - none of these parse an encrypted
+// ticket, they just classify the connection context (see field comments above).
+client_auth_kind HLTVAuthorize(authdata_t* authdata);
+client_auth_kind SettiAuthorize(authdata_t* authdata);
+client_auth_kind NoSteam47Authorize(authdata_t* authdata);
+client_auth_kind NoSteam48Authorize(authdata_t* authdata);
 
 // Tries all v1 authorizers in turn (RevEmu family only); returns CA_UNKNOWN if none match.
 // sc2009RevCompat / forceAuthVersion2018Plus mirror dproto.cfg's SC2009_RevCompatMode and
