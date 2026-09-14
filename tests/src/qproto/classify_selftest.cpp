@@ -1,8 +1,9 @@
 // Sanity check for the non-ticket classifiers ported from classic's client_auth.cpp /
-// classic_authorizers.cpp: CHLTVAuthorizer ("*hltv" userinfo key), CSettiAuthorizer
-// (fixed 0x300-byte ticket + magic constants), CNoSteam47Authorizer/CNoSteam48Authorizer
-// (protocol-only catch-all). Also checks Qproto_Authorize_Client's dispatch order -
-// HLTV/Setti must win over the RevEmu-family authorizers and the NoSteam47/48 fallback.
+// classic_authorizers.cpp: CSettiAuthorizer (fixed 0x300-byte ticket + magic constants),
+// CSXEIAuthorizer ("*HID" userinfo key), CNoSteam47Authorizer/CNoSteam48Authorizer
+// (protocol-only catch-all). Also checks Qproto_Authorize_Client's dispatch order.
+// (classic also has a CHLTVAuthorizer - deliberately not ported, see qproto_shared.h's
+// comment on CA_HLTV's removal for why an HLTV connection can never reach this code.)
 #include "qproto/qproto_authorizers.h"
 #include <cstdio>
 #include <cstring>
@@ -11,24 +12,7 @@ int main()
 {
 	int failures = 0;
 
-	// 1) HLTV: recognized purely from hltvHint, regardless of ticket content.
-	{
-		authdata_t authdata = {};
-		authdata.hltvHint = "1";
-		client_auth_kind kind = HLTVAuthorize(&authdata);
-		bool ok = kind == CA_HLTV && authdata.steamId == STEAM_ID_LAN;
-		printf("[%s] HLTVAuthorize recognizes non-empty *hltv hint\n", ok ? "OK" : "FAIL");
-		if (!ok) failures++;
-	}
-	{
-		authdata_t authdata = {};
-		authdata.hltvHint = "";
-		bool ok = HLTVAuthorize(&authdata) == CA_UNKNOWN;
-		printf("[%s] HLTVAuthorize rejects empty *hltv hint\n", ok ? "OK" : "FAIL");
-		if (!ok) failures++;
-	}
-
-	// 2) Setti: exact ticket length (0x300) + at least one of the 4 magic DWORDs.
+	// 1) Setti: exact ticket length (0x300) + at least one of the 4 magic DWORDs.
 	{
 		uint32_t ticket[0x300 / 4] = {};
 		ticket[1] = 0xC7DB6023; // SETTI_KEY2
@@ -50,7 +34,7 @@ int main()
 		if (!ok) failures++;
 	}
 
-	// 3) SXEI: hex hardware id from the engine-protected "*HID" userinfo key.
+	// 2) SXEI: hex hardware id from the engine-protected "*HID" userinfo key.
 	{
 		authdata_t authdata = {};
 		authdata.sxeiHidHex = "1A2B3C4D";
@@ -67,7 +51,7 @@ int main()
 		if (!ok) failures++;
 	}
 
-	// 4) NoSteam47/48: protocol-only, ticket content irrelevant.
+	// 3) NoSteam47/48: protocol-only, ticket content irrelevant.
 	{
 		authdata_t authdata = {};
 		authdata.protocol = 47;
@@ -83,8 +67,8 @@ int main()
 		if (!ok) failures++;
 	}
 
-	// 5) Dispatch order: a client with *hltv set wins even if it also happens to carry
-	//    a Setti-shaped ticket - HLTV is checked first, exactly like classic's own
+	// 4) Dispatch order: a client with a valid *HID hint wins even if it also happens to
+	//    carry a Setti-shaped ticket - SXEI is checked first, exactly like classic's own
 	//    authorizer registration order.
 	{
 		uint32_t ticket[0x300 / 4] = {};
@@ -92,15 +76,15 @@ int main()
 		authdata_t authdata = {};
 		authdata.authTicket = (const uint8_t*)ticket;
 		authdata.ticketLen = sizeof(ticket);
-		authdata.hltvHint = "1";
+		authdata.sxeiHidHex = "1A2B3C4D";
 		authdata.protocol = 48;
 		client_auth_kind kind = Qproto_Authorize_Client(&authdata, true, true);
-		bool ok = kind == CA_HLTV;
-		printf("[%s] Qproto_Authorize_Client prioritizes HLTV over Setti/NoSteam48 (got kind=%d)\n", ok ? "OK" : "FAIL", (int)kind);
+		bool ok = kind == CA_SXEI;
+		printf("[%s] Qproto_Authorize_Client prioritizes SXEI over Setti/NoSteam48 (got kind=%d)\n", ok ? "OK" : "FAIL", (int)kind);
 		if (!ok) failures++;
 	}
 
-	// 6) Dispatch fallback: no ticket, no hltv hint, protocol=47 -> CA_NO_STEAM_47.
+	// 5) Dispatch fallback: no ticket, no *HID hint, protocol=47 -> CA_NO_STEAM_47.
 	{
 		authdata_t authdata = {};
 		authdata.protocol = 47;

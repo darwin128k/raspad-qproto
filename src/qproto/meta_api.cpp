@@ -10,6 +10,7 @@
 #include "qproto/qproto_log.h"
 #include <cstdio>
 #include "qproto/qproto_cfg.h"
+#include "qproto/qproto_bans.h"
 
 static META_FUNCTIONS gMetaFunctionTable = {
 	NULL,			// pfnGetEntityAPI
@@ -65,17 +66,19 @@ C_DLLEXPORT int Meta_Attach(PLUG_LOADTIME /*now*/, META_FUNCTIONS* pFunctionTabl
 	Qproto_Cfg_Load();
 	Qproto_Log_Init(g_qprotoConfig.loggingMode);
 	Qproto_Log("Meta_Attach called, installing hook...");
-	Qproto_Log("config: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Steam(cid=%d) HLTV(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
+	Qproto_Log("config: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
 		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.cidRevEmu,
 		(int)g_qprotoConfig.enableRevEmu2013, (int)g_qprotoConfig.cidRevEmu2013,
 		(int)g_qprotoConfig.enableSC2009, (int)g_qprotoConfig.cidSC2009,
 		(int)g_qprotoConfig.enableOldRevEmu, (int)g_qprotoConfig.cidOldRevEmu,
 		(int)g_qprotoConfig.enableSXEI, (int)g_qprotoConfig.cidSXEI,
 		(int)g_qprotoConfig.cidSteam,
-		(int)g_qprotoConfig.cidHLTV, (int)g_qprotoConfig.cidSetti,
+		(int)g_qprotoConfig.cidSetti,
 		(int)g_qprotoConfig.cidNoSteam47, (int)g_qprotoConfig.cidNoSteam48,
 		(int)g_qprotoConfig.cidSteamPending,
 		g_qprotoConfig.loggingMode);
+
+	Qproto_Bans_Load();
 
 	if (!Qproto_Hook_Install()) {
 		LOG_ERROR(PLID, "Failed to install Steam_NotifyClientConnect hook");

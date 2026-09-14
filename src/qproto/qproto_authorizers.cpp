@@ -235,21 +235,6 @@ client_auth_kind OldRevEmuAuthorize(authdata_t* authdata)
 	return CA_OLD_REVEMU;
 }
 
-// Ported from classic's CHLTVAuthorizer::authorize (classic_authorizers.cpp) - HLTV
-// proxies are recognized by a non-empty "*hltv" userinfo key, not by ticket content,
-// and are checked ahead of everything else (same priority classic's own authorizer
-// registration order uses).
-client_auth_kind HLTVAuthorize(authdata_t* authdata)
-{
-	if (!authdata->hltvHint || !authdata->hltvHint[0])
-		return CA_UNKNOWN;
-
-	authdata->steamId = STEAM_ID_LAN;
-	authdata->authKeyKind = AK_OTHER;
-	authdata->authKeyLen = 0;
-	return CA_HLTV;
-}
-
 // Ported verbatim from classic's CSettiAuthorizer::authorize - exact ticket length and
 // magic constants (credited there to "vityan666"). Setti is a monitoring/promotion
 // bot, not an attacker - it must be recognized and let through, not silently dropped
@@ -340,8 +325,8 @@ client_auth_kind Qproto_Authorize_Client(authdata_t* authdata, bool /*sc2009RevC
 
 	// Order matches classic's own authorizer registration order (classic_authorizers.cpp
 	// classic_Init_Authorizers): userinfo-based checks first, then ticket formats from
-	// most to least specific, with the protocol-only catch-alls tried last.
-	if ((r = HLTVAuthorize(authdata)) != CA_UNKNOWN) return r;
+	// most to least specific, with the protocol-only catch-alls tried last. (classic's
+	// CHLTVAuthorizer isn't ported - see qproto_shared.h's comment on CA_HLTV's removal.)
 	if ((r = SXEIAuthorize(authdata)) != CA_UNKNOWN) return r;
 	if ((r = SettiAuthorize(authdata)) != CA_UNKNOWN) return r;
 

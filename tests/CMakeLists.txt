@@ -9,8 +9,15 @@ set(QPROTO_SRC ${CMAKE_SOURCE_DIR}/src/qproto)
 
 function(qproto_add_test name)
 	add_executable(${name} src/qproto/${name}.cpp ${ARGN})
-	target_include_directories(${name} PRIVATE ${CMAKE_SOURCE_DIR}/include)
-	target_compile_options(${name} PRIVATE ${QPROTO_M32_FLAGS})
+	target_include_directories(${name} PRIVATE
+		${CMAKE_SOURCE_DIR}/include
+		${DEP_METAMOD}
+		${DEP_HLSDK}/dlls
+		${DEP_HLSDK}/engine
+		${DEP_HLSDK}/common
+		${DEP_HLSDK}/pm_shared
+	)
+	target_compile_options(${name} PRIVATE ${QPROTO_M32_FLAGS} -fpermissive)
 	target_link_options(${name} PRIVATE ${QPROTO_M32_FLAGS})
 	add_test(NAME ${name} COMMAND ${name})
 endfunction()
@@ -23,6 +30,12 @@ qproto_add_test(crypto_selftest ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cp
 qproto_add_test(authorizers_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 qproto_add_test(oldrevemu_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 qproto_add_test(classify_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
+
+# qproto_bans.cpp isn't fully engine-free (Load/Add/Remove touch g_engfuncs) unlike the
+# authorizers above - src/qproto/qproto_engfuncs_stub.cpp supplies a zero-initialized
+# g_engfuncs just to satisfy the linker; Qproto_Bans_ParseHexLine (what's actually
+# tested) never calls through it.
+qproto_add_test(bans_selftest ${QPROTO_SRC}/qproto_bans.cpp ${QPROTO_SRC}/qproto_log.cpp src/qproto/qproto_engfuncs_stub.cpp)
 
 # Exercises the actual mprotect+JMP detour mechanism against a real engine_i486.so
 # via dlopen - never calls through the patched function (see the file's own header

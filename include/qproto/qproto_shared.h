@@ -11,10 +11,8 @@
 // Auth constants
 #define STEAM_ID_LAN				0
 #define STEAM_ID_PENDING			1
-#define MAX_STEAMIDSALTLEN			64
 #define MAX_AUTHKEY_LEN				128
-#define MAX_HASHDATA_LEN			(4 + MAX_STEAMIDSALTLEN + MAX_AUTHKEY_LEN)
-#define IPGEN_KEY					0xA95CE2B9
+#define IPGEN_KEY					0xA95CE2B9 // qproto_hook.cpp's synthetic-id-by-IP derivation, mirrors classic's SteamByIp()
 
 enum auth_key_kind {
 	AK_STEAM,
@@ -30,9 +28,17 @@ enum auth_key_kind {
 // but are deliberately not ported: both are dead formats predating RevEmu, with
 // practically no real users left, and AVSMP transmits the steamid completely
 // unencrypted (trivially spoofable) - not worth the risk surface for the two of them.
+//
+// CA_HLTV is also gone (was present through an earlier revision of this port) - verified
+// via Ghidra decompilation of this exact engine build's SV_ConnectClient that HLTV proxy
+// connections use a completely separate code path (net address type NA_BROADCAST,
+// checked before the STEAM/NA_IP branch) that calls Steam_NotifyBotConnect, not
+// Steam_NotifyClientConnect - the one function qproto hooks. An HLTV connection can
+// never reach qproto_hook.cpp at all on this server, so a cid_HLTV knob here would be
+// pure decoration that does nothing; classic can do this because it hooks SV_ConnectClient
+// itself via ReHLDS's private hookchains, several steps earlier than we have access to.
 enum client_auth_kind {
 	CA_UNKNOWN = 0,
-	CA_HLTV,
 	CA_NO_STEAM_47,			// No auth data was provided by client
 	CA_NO_STEAM_48,			// No auth data was provided by client
 	CA_SETTI,				// Setti bot
@@ -70,82 +76,12 @@ enum qproto_log_mode {
 	rl_logfile = 2,
 };
 
-enum auth_version {
-	av_dproto = 1,
-	av_classic2015 = 2,
-	av_classic2018 = 3,
-	av_classic2024 = 4
-};
-
-enum server_answer_type {
-	sat_source = 0,
-	sat_goldsource = 1,
-	sat_hybrid = 2
-};
-
-struct client_id_gen_opts_t {
-	client_id_kind id_kind;
-	size_t prefix1;
-	size_t prefix2;
-};
-
-enum ipv4_error
-{
-	ERROR_NO,
-	ERROR_IPV4_DATA_OVERFLOW,
-	ERROR_IPV4_NO_SYMBOL,
-	ERROR_IPV4_INPUT_OVERFLOW,
-	ERROR_IPV4_INVALID_SYMBOL,
-	ERROR_IPV4_NOT_ENOUGH_INPUT
-};
-
-struct ipv4_t
-{
-	ipv4_t() :
-		ip(0),
-		port(0)
-	{
-	}
-
-	ipv4_t(uint8_t (&_ip)[4], uint16_t _port) :
-		ipByte{_ip[0], _ip[1], _ip[2], _ip[3]},
-		port(_port)
-	{
-	}
-
-	ipv4_t(uint32_t _ip, uint16_t _port) :
-		ip(_ip),
-		port(_port)
-	{
-	}
-
-	union {
-		uint32_t ip;
-		uint8_t ipByte[4];
-	};
-
-	uint16_t port;
-};
-
-// Is the IP part of one of the reserved blocks?
-inline bool IsReservedAdr(uint32_t ipaddr)
-{
-	union IPUnion {
-		uint32_t ip;
-		uint8_t ipByte[4];
-	};
-
-	IPUnion addr{};
-	addr.ip = ipaddr;
-
-	// IP is stored little endian; for an IP of w.x.y.z, ip[3] will be w, ip[2] will be x, etc
-	if ((addr.ipByte[0] == 10) ||													// 10.x.x.x is reserved
-		(addr.ipByte[0] == 127) ||													// 127.x.x.x
-		(addr.ipByte[0] == 172 && addr.ipByte[1] >= 16 && addr.ipByte[1] <= 31) ||	// 172.16.x.x  - 172.31.x.x
-		(addr.ipByte[0] == 192 && addr.ipByte[1] == 168))							// 192.168.x.x
-	{
-		return true;
-	}
-
-	return false;
-}
+// classic's version of this header also has auth_version (its own 2015/2018/2024 wire-
+// format revisions), server_answer_type (source/goldsource response shaping),
+// client_id_gen_opts_t (custom STEAM_x:y:z prefix digits - only meaningful if you hook
+// SV_GetIDString and build the id string yourself, which qproto deliberately doesn't -
+// see qproto_hook.cpp's header comment), and ipv4_t/IsReservedAdr (LAN-address
+// detection for classic's own SteamByIp()/id-gen pipeline). None of these apply to
+// qproto: we hook a single pinned engine build directly rather than speaking a
+// versioned wire protocol, and MapClientIdKindToAuthIdType/CidForAuthKind
+// (qproto_hook.cpp) already cover the id-assignment logic we actually need.

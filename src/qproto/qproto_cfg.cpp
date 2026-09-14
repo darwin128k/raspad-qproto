@@ -99,10 +99,15 @@ void Qproto_Cfg_Load()
 			g_qprotoConfig.cidSXEI = (client_id_kind)atoi(value);
 		}
 		else if (strcasecmp(key, "cid_Steam") == 0) {
-			g_qprotoConfig.cidSteam = (client_id_kind)atoi(value);
-		}
-		else if (strcasecmp(key, "cid_HLTV") == 0) {
-			g_qprotoConfig.cidHLTV = (client_id_kind)atoi(value);
+			// Only CI_REAL_STEAM (passthrough) and CI_STEAM_BY_IP/CI_VALVE_BY_IP (id
+			// override) are actually enforced for a native-Steam-authenticated client -
+			// see qproto_hook.cpp's native-success branch. Anything else (notably
+			// CI_DEPRECATED - rejecting a client the engine already authenticated via
+			// Steam isn't something qproto can safely do without further engine
+			// investigation) is clamped to CI_REAL_STEAM here rather than accepted and
+			// silently ignored per-connection.
+			client_id_kind v = (client_id_kind)atoi(value);
+			g_qprotoConfig.cidSteam = (v == CI_STEAM_BY_IP || v == CI_VALVE_BY_IP) ? v : CI_REAL_STEAM;
 		}
 		else if (strcasecmp(key, "cid_Setti") == 0) {
 			g_qprotoConfig.cidSetti = (client_id_kind)atoi(value);
@@ -116,13 +121,46 @@ void Qproto_Cfg_Load()
 		else if (strcasecmp(key, "cid_SteamPending") == 0) {
 			g_qprotoConfig.cidSteamPending = (client_id_kind)atoi(value);
 		}
+		else if (strcasecmp(key, "RejMsgUnknown") == 0) {
+			strncpy(g_qprotoConfig.rejMsgUnknown, value, sizeof(g_qprotoConfig.rejMsgUnknown) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgBanned") == 0) {
+			strncpy(g_qprotoConfig.rejMsgBanned, value, sizeof(g_qprotoConfig.rejMsgBanned) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgNoSteam47") == 0) {
+			strncpy(g_qprotoConfig.rejMsgNoSteam47, value, sizeof(g_qprotoConfig.rejMsgNoSteam47) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgNoSteam48") == 0) {
+			strncpy(g_qprotoConfig.rejMsgNoSteam48, value, sizeof(g_qprotoConfig.rejMsgNoSteam48) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgRevEmu") == 0) {
+			strncpy(g_qprotoConfig.rejMsgRevEmu, value, sizeof(g_qprotoConfig.rejMsgRevEmu) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgRevEmu2013") == 0) {
+			strncpy(g_qprotoConfig.rejMsgRevEmu2013, value, sizeof(g_qprotoConfig.rejMsgRevEmu2013) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgSC2009") == 0) {
+			strncpy(g_qprotoConfig.rejMsgSC2009, value, sizeof(g_qprotoConfig.rejMsgSC2009) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgOldRevEmu") == 0) {
+			strncpy(g_qprotoConfig.rejMsgOldRevEmu, value, sizeof(g_qprotoConfig.rejMsgOldRevEmu) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgSetti") == 0) {
+			strncpy(g_qprotoConfig.rejMsgSetti, value, sizeof(g_qprotoConfig.rejMsgSetti) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgSXEI") == 0) {
+			strncpy(g_qprotoConfig.rejMsgSXEI, value, sizeof(g_qprotoConfig.rejMsgSXEI) - 1);
+		}
+		else if (strcasecmp(key, "RejMsgSteamPending") == 0) {
+			strncpy(g_qprotoConfig.rejMsgSteamPending, value, sizeof(g_qprotoConfig.rejMsgSteamPending) - 1);
+		}
 	}
 	fclose(f);
 
 	// Note: this fires before Qproto_Log_Init() (we have to read LoggingMode before
 	// deciding whether to open the log file at all), so it silently no-ops here - see
 	// the "config: ..." line logged right after Qproto_Log_Init() in Meta_Attach instead.
-	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Steam(cid=%d) HLTV(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
+	Qproto_Log("qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
 		path,
 		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.cidRevEmu,
 		(int)g_qprotoConfig.enableRevEmu2013, (int)g_qprotoConfig.cidRevEmu2013,
@@ -130,7 +168,7 @@ void Qproto_Cfg_Load()
 		(int)g_qprotoConfig.enableOldRevEmu, (int)g_qprotoConfig.cidOldRevEmu,
 		(int)g_qprotoConfig.enableSXEI, (int)g_qprotoConfig.cidSXEI,
 		(int)g_qprotoConfig.cidSteam,
-		(int)g_qprotoConfig.cidHLTV, (int)g_qprotoConfig.cidSetti,
+		(int)g_qprotoConfig.cidSetti,
 		(int)g_qprotoConfig.cidNoSteam47, (int)g_qprotoConfig.cidNoSteam48,
 		(int)g_qprotoConfig.cidSteamPending,
 		g_qprotoConfig.loggingMode);

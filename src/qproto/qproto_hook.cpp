@@ -36,24 +36,46 @@
 #include "qproto/qproto_authorizers.h"
 #include "qproto/qproto_log.h"
 #include "qproto/qproto_cfg.h"
+#include "qproto/qproto_bans.h"
+#include "qproto/qproto_client_state.h"
 #include "sdk_util.h"
+#include <cstdio>
 
 namespace {
 
 const uintptr_t kNetworkUseridOffset = 0x4a90; // client_t::network_userid, confirmed via DWARF
-const uint32_t kIpGenKey = 0xA95CE2B9; // matches classic's IPGEN_KEY convention
+const uintptr_t kRemoteAddressOffset = 0x20; // client_t::netchan.remote_address (netadr_t), confirmed via DWARF: netchan @client_t+0x1c, remote_address @netchan_t+0x4
 
 typedef int (*SteamNotifyClientConnect_t)(void* client, char* authBuf, int len);
 typedef char* (*CmdArgv_t)(int);
 typedef char* (*InfoValueForKey_t)(char*, char*);
+typedef void (*SVRejectConnection_t)(void* adr, const char* fmt, ...);
 
 void* g_engineHandle;
 void* g_hookTarget;
 SteamNotifyClientConnect_t g_real;
 CmdArgv_t g_Cmd_Argv;
 InfoValueForKey_t g_Info_ValueForKey;
+SVRejectConnection_t g_SV_RejectConnection;
 unsigned char g_savedBytes[5];
 bool g_installed;
+
+// Sends `message` to the still-connecting client as its own out-of-band reject packet,
+// via the real engine's SV_RejectConnection - the exact same mechanism classic uses for
+// its per-emulator dp_rejmsg_* cvars (client_auth.cpp's classic_Reject_Deprecated).
+// Confirmed via ReHLDS's own open source (sv_main.cpp) that the *native* engine still
+// unconditionally sends its own generic "STEAM validation rejected\n" right after this
+// (see qproto_hook.cpp's header comment / the conversation that led here) - classic
+// lives with that exact same double-packet behavior in production, so we do too rather
+// than trying to suppress it (not possible from inside this hook regardless).
+// `client`'s netchan.remote_address is already populated by SV_ConnectClient before
+// this hook ever runs, so we just point straight into it - no need to construct our own.
+void SendCustomReject(void* client, const char* message)
+{
+	if (!g_SV_RejectConnection) return;
+	void* adr = (uint8_t*)client + kRemoteAddressOffset;
+	g_SV_RejectConnection(adr, "%s\n", message); // literal format string - message is never itself a format string
+}
 
 void PatchJmp(void* target, void* dest, unsigned char* saveBack)
 {
@@ -122,7 +144,6 @@ client_id_kind CidForAuthKind(client_auth_kind kind)
 		case CA_REVEMU_2013: return g_qprotoConfig.cidRevEmu2013;
 		case CA_STEAMCLIENT_2009: return g_qprotoConfig.cidSC2009;
 		case CA_OLD_REVEMU: return g_qprotoConfig.cidOldRevEmu;
-		case CA_HLTV: return g_qprotoConfig.cidHLTV;
 		case CA_SETTI: return g_qprotoConfig.cidSetti;
 		case CA_NO_STEAM_47: return g_qprotoConfig.cidNoSteam47;
 		case CA_NO_STEAM_48: return g_qprotoConfig.cidNoSteam48;
@@ -134,8 +155,8 @@ client_id_kind CidForAuthKind(client_auth_kind kind)
 }
 
 // Mirrors classic's classic_utils.cpp IsNumericAuthKind(), trimmed to what qproto can
-// actually produce - HLTV/Setti/NoSteam47/NoSteam48 are deliberately excluded there
-// too (they're fixed-identity kinds, not "this steamid might just be unresolved yet").
+// actually produce - Setti/NoSteam47/NoSteam48 are deliberately excluded there too
+// (they're fixed-identity kinds, not "this steamid might just be unresolved yet").
 // CA_STEAM is included, matching classic exactly - even a native Steam auth can in
 // principle resolve to a pending id.
 bool IsNumericAuthKind(client_auth_kind kind)
@@ -149,14 +170,13 @@ bool IsNumericAuthKind(client_auth_kind kind)
 	}
 }
 
-const char* classic_GetAuthorizerName_stub(client_auth_kind kind)
+const char* Qproto_GetAuthorizerName(client_auth_kind kind)
 {
 	switch (kind) {
 		case CA_REVEMU: return "RevEmu";
 		case CA_REVEMU_2013: return "RevEmu2013";
 		case CA_STEAMCLIENT_2009: return "SC2009";
 		case CA_OLD_REVEMU: return "OldRevEmu";
-		case CA_HLTV: return "HLTV";
 		case CA_SETTI: return "Setti";
 		case CA_NO_STEAM_47: return "NoSteam47";
 		case CA_NO_STEAM_48: return "NoSteam48";
@@ -167,17 +187,35 @@ const char* classic_GetAuthorizerName_stub(client_auth_kind kind)
 	}
 }
 
+// Picks which qproto.cfg RejMsg* the client actually sees when their cid_* resolves to
+// CI_DEPRECATED - matches classic's classic_Reject_Deprecated (client_auth.cpp), which
+// does the exact same per-authkind cvar lookup.
+const char* RejectMessageForAuthKind(client_auth_kind kind)
+{
+	switch (kind) {
+		case CA_NO_STEAM_47: return g_qprotoConfig.rejMsgNoSteam47;
+		case CA_NO_STEAM_48: return g_qprotoConfig.rejMsgNoSteam48;
+		case CA_REVEMU: return g_qprotoConfig.rejMsgRevEmu;
+		case CA_REVEMU_2013: return g_qprotoConfig.rejMsgRevEmu2013;
+		case CA_STEAMCLIENT_2009: return g_qprotoConfig.rejMsgSC2009;
+		case CA_OLD_REVEMU: return g_qprotoConfig.rejMsgOldRevEmu;
+		case CA_SETTI: return g_qprotoConfig.rejMsgSetti;
+		case CA_SXEI: return g_qprotoConfig.rejMsgSXEI;
+		case CA_STEAM_PENDING: return g_qprotoConfig.rejMsgSteamPending;
+		default: return g_qprotoConfig.rejMsgUnknown;
+	}
+}
+
 int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 {
 	Qproto_Log("hook fired: client=%p authBuf=%p len=%d", client, (void*)authBuf, len);
 
-	// protocol/hltvHint come from the connect command's info-strings, not the ticket -
-	// needed below by HLTVAuthorize/NoSteam47Authorize/NoSteam48Authorize
+	// protocol/sxeiHidHex come from the connect command's info-strings, not the ticket -
+	// needed below by NoSteam47Authorize/NoSteam48Authorize/SXEIAuthorize
 	// (qproto_authorizers.cpp), ported from classic's SV_CheckKeyInfo_hook ("prot" key)
-	// and CHLTVAuthorizer ("*hltv" key). Extracted once, before the native call (these
+	// and CSXEIAuthorizer ("*HID" key). Extracted once, before the native call (these
 	// come from Cmd_Argv/Info_ValueForKey, unaffected by the Steam_NotifyClientConnect patch).
 	int protocol = 0;
-	const char* hltvHint = nullptr;
 	const char* sxeiHidHex = nullptr;
 	if (g_Cmd_Argv) {
 		char* protinfo = g_Cmd_Argv(3);
@@ -196,9 +234,7 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 			protocol = prot ? atoi(prot) : 0;
 		}
 		if (g_Info_ValueForKey && userinfo) {
-			char keyHltv[] = "*hltv";
 			char keyHid[] = "*HID";
-			hltvHint = g_Info_ValueForKey(userinfo, keyHltv);
 			sxeiHidHex = g_Info_ValueForKey(userinfo, keyHid);
 		}
 	}
@@ -218,30 +254,37 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 		// cid_* pipeline as every emulator (client_auth.cpp: authkind=CA_STEAM, then the
 		// idkind switch applies uniformly) instead of passing it through unconditionally -
 		// e.g. cid_Steam=3/4 can mask even a real Steam player behind an IP-derived id.
-		// We mirror that for the non-destructive cases (pending reclassification,
-		// STEAM_BY_IP/VALVE_BY_IP override) but do NOT enforce cid_Steam=Deprecated -
-		// see the comment on QprotoConfig::cidSteam for why that's not safely portable
-		// without further engine investigation.
+		// cid_Steam is clamped at config-load time (qproto_cfg.cpp) to only the values
+		// enforced below, so there's no "requested but unsupported" case to handle here.
 		uint32_t nativeSteamId = (uint32_t)(*(uint64_t*)(base + 0x4) & 0xFFFFFFFFu);
 		client_auth_kind kind = (nativeSteamId <= STEAM_ID_PENDING) ? CA_STEAM_PENDING : CA_STEAM;
 		client_id_kind cid = CidForAuthKind(kind);
+		uint32_t finalSteamId = nativeSteamId;
 
 		if (cid == CI_STEAM_BY_IP || cid == CI_VALVE_BY_IP) {
 			int authIdType = MapClientIdKindToAuthIdType(cid);
-			uint32_t finalSteamId = clientIp ^ kIpGenKey;
+			finalSteamId = clientIp ^ IPGEN_KEY;
 			*(int32_t*)(base + 0x0) = authIdType;
 			*(uint64_t*)(base + 0x4) = (uint64_t)finalSteamId;
 			Qproto_Log("native Steam auth ok (%s), cid=%d overrides id -> idtype=%d steamid=%u",
-				classic_GetAuthorizerName_stub(kind), (int)cid, authIdType, finalSteamId);
-		}
-		else if (cid == CI_DEPRECATED) {
-			Qproto_Log("native Steam auth ok (%s), cid=%d (Deprecated) requested but rejecting an "
-				"already-authenticated Steam client isn't implemented - allowing through unmodified",
-				classic_GetAuthorizerName_stub(kind), (int)cid);
+				Qproto_GetAuthorizerName(kind), (int)cid, authIdType, finalSteamId);
 		}
 		else {
-			Qproto_Log("native Steam auth ok (%s), cid=%d - no override configured", classic_GetAuthorizerName_stub(kind), (int)cid);
+			Qproto_Log("native Steam auth ok (%s), cid=%d - no override configured", Qproto_GetAuthorizerName(kind), (int)cid);
 		}
+
+		// Stage this classification for dllapi.cpp's pfnClientConnect hook to pick up -
+		// see qproto_client_state.h. Native Steam clients have no raw auth key, so
+		// authKeyLen stays 0 (the default) - qproto_api.h callers treat that as "no
+		// hardware-id ban is possible for this client", same as a real admin would need
+		// Steam's own tools for that.
+		QprotoClientRecord rec;
+		rec.protocol = protocol;
+		rec.ipAddress = clientIp;
+		rec.authKind = kind;
+		rec.idKind = cid;
+		rec.steamId = finalSteamId;
+		Qproto_ClientState_SetPending(rec);
 
 		return result;
 	}
@@ -250,7 +293,6 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	authdata.authTicket = (const uint8_t*)authBuf;
 	authdata.ticketLen = (size_t)(authBuf ? len : 0);
 	authdata.protocol = protocol;
-	authdata.hltvHint = hltvHint;
 	authdata.sxeiHidHex = sxeiHidHex;
 
 	if (authBuf && len > 0) {
@@ -262,7 +304,23 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	if (kind == CA_UNKNOWN) {
 		Qproto_Log("no authorizer matched (protocol=%d, ticketLen=%d) - keeping native rejection",
 			authdata.protocol, (int)authdata.ticketLen);
+		SendCustomReject(client, g_qprotoConfig.rejMsgUnknown);
 		return 0;
+	}
+
+	if (authdata.authKeyLen > 0) {
+		char hex[MAX_AUTHKEY_LEN * 2 + 1];
+		for (size_t i = 0; i < authdata.authKeyLen; i++) {
+			snprintf(hex + i * 2, 3, "%02x", (uint8_t)authdata.authKey[i]);
+		}
+		Qproto_Log("raw auth key (%s, hex - qproto_ban_authkey()/qproto_bans.cfg use this exact string): %s",
+			Qproto_GetAuthorizerName(kind), hex);
+
+		if (Qproto_Bans_IsBanned((const uint8_t*)authdata.authKey, authdata.authKeyLen)) {
+			Qproto_Log("REJECTED: raw auth key is on the qproto_bans.cfg ban list");
+			SendCustomReject(client, g_qprotoConfig.rejMsgBanned);
+			return 0;
+		}
 	}
 
 	// Reclassify to CA_STEAM_PENDING when the resolved steamId came back as
@@ -278,7 +336,8 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	int authIdType = MapClientIdKindToAuthIdType(cid);
 	if (authIdType < 0) {
 		Qproto_Log("%s authorized but cid=%d (dproto.cfg-style) means reject - keeping native rejection",
-			classic_GetAuthorizerName_stub(kind), (int)cid);
+			Qproto_GetAuthorizerName(kind), (int)cid);
+		SendCustomReject(client, RejectMessageForAuthKind(kind));
 		return 0;
 	}
 
@@ -288,14 +347,29 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	// of which authorizer produced the classification).
 	uint32_t finalSteamId = authdata.steamId;
 	if (cid == CI_STEAM_BY_IP || cid == CI_VALVE_BY_IP) {
-		finalSteamId = clientIp ^ kIpGenKey;
+		finalSteamId = clientIp ^ IPGEN_KEY;
 	}
 
 	*(int32_t*)(base + 0x0) = authIdType;
 	*(uint64_t*)(base + 0x4) = (uint64_t)finalSteamId;
 
 	Qproto_Log("emulated auth ok (%s), cid=%d -> idtype=%d, steamid=%u",
-		classic_GetAuthorizerName_stub(kind), (int)cid, authIdType, finalSteamId);
+		Qproto_GetAuthorizerName(kind), (int)cid, authIdType, finalSteamId);
+
+	// Stage this classification for dllapi.cpp's pfnClientConnect hook to pick up -
+	// see qproto_client_state.h.
+	QprotoClientRecord rec;
+	rec.protocol = protocol;
+	rec.ipAddress = clientIp;
+	rec.authKind = kind;
+	rec.idKind = cid;
+	rec.steamId = finalSteamId;
+	rec.authKeyKind = authdata.authKeyKind;
+	rec.authKeyLen = authdata.authKeyLen;
+	if (authdata.authKeyLen > 0) {
+		memcpy(rec.authKey, authdata.authKey, authdata.authKeyLen);
+	}
+	Qproto_ClientState_SetPending(rec);
 
 	return 1; // tell SV_ConnectClient the connection is fine after all
 }
@@ -325,7 +399,9 @@ bool Qproto_Hook_Install()
 
 	g_Cmd_Argv = (CmdArgv_t)dlsym(g_engineHandle, "Cmd_Argv");
 	g_Info_ValueForKey = (InfoValueForKey_t)dlsym(g_engineHandle, "Info_ValueForKey");
-	Qproto_Log("Cmd_Argv=%p Info_ValueForKey=%p", (void*)g_Cmd_Argv, (void*)g_Info_ValueForKey);
+	g_SV_RejectConnection = (SVRejectConnection_t)dlsym(g_engineHandle, "SV_RejectConnection");
+	Qproto_Log("Cmd_Argv=%p Info_ValueForKey=%p SV_RejectConnection=%p",
+		(void*)g_Cmd_Argv, (void*)g_Info_ValueForKey, (void*)g_SV_RejectConnection);
 
 	PatchJmp(g_hookTarget, (void*)&Qproto_Steam_NotifyClientConnect_hook, g_savedBytes);
 	g_installed = true;
