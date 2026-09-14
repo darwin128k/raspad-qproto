@@ -26,6 +26,10 @@ enum auth_key_kind {
 	AK_MAX
 };
 
+// CA_STEAM_EMU (hCupa SteamEmu) and CA_AVSMP existed in classic's version of this enum
+// but are deliberately not ported: both are dead formats predating RevEmu, with
+// practically no real users left, and AVSMP transmits the steamid completely
+// unencrypted (trivially spoofable) - not worth the risk surface for the two of them.
 enum client_auth_kind {
 	CA_UNKNOWN = 0,
 	CA_HLTV,
@@ -34,12 +38,10 @@ enum client_auth_kind {
 	CA_SETTI,				// Setti bot
 	CA_STEAM,				// Authorized by steam
 	CA_STEAM_PENDING,		// Authorized by steam, but ID is STEAM_ID_PENDING
-	CA_STEAM_EMU,			// SteamEmu authorization (authorization by serial number of first HDD volume in the system)
 	CA_OLD_REVEMU,			// Old RevEmu (authorization by serial number of first HDD volume in the system)
 	CA_REVEMU,				// RevEmu (authorization by serial number of first HDD in the system)
 	CA_STEAMCLIENT_2009,	// SteamClient (alias for revemu) (authorization by serial number of first HDD in the system)
 	CA_REVEMU_2013,			// RevEmu (authorization by serial number of first HDD in the system)
-	CA_AVSMP,				// Steam emulator, transmits steamid from Steam without any security/encryption, so it may be easily spoofed
 	CA_SXEI,				// Authorization by sXe Injected anticheat ID.
 
 	CA_MAX,
