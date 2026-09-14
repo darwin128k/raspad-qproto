@@ -13,8 +13,6 @@
 #define MAX_HASHDATA_LEN			(4 + MAX_STEAMIDSALTLEN + MAX_AUTHKEY_LEN)
 #define IPGEN_KEY					0xA95CE2B9
 
-#define LOG_PREFIX					"[QPROTO]: "
-
 enum auth_key_kind {
 	AK_STEAM,
 	AK_VOLUMEID,
