@@ -4,8 +4,8 @@
 // feed it through our ported RevEmu2013Authorize(), and check it recovers the same
 // SteamID/auth key. This exercises Rijndael+SHA256+revHash together, not just in
 // isolation - the thing that actually matters for real client tickets.
-#include "precompiled.h"
-#include "qproto_authorizers.h"
+#include "qproto/precompiled.h"
+#include "qproto/qproto_authorizers.h"
 #include <cstdio>
 #include <cstring>
 

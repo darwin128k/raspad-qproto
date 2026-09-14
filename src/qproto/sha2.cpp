@@ -38,7 +38,7 @@
 
 *************************************************************/
 
-#include "precompiled.h"
+#include "qproto/precompiled.h"
 
 using namespace std;
 

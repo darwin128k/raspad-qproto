@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <cstddef>
-#include "classic_shared.h"
+#include "qproto/classic_shared.h"
 
 // Ported from classic's classic_authorizers.{h,cpp} (GPLv3), trimmed to the v1 scope
 // (Steam + RevEmu family: RevEmu >=9.74, RevEmu2013, SC2009). No engine dependency -

@@ -1,8 +1,8 @@
-#include "qproto_authorizers.h"
-#include "qproto_utils.h"
-#include "qproto_ministeamid.h"
-#include "qproto_cfg.h"
-#include "precompiled.h"	// Rijndael.h, sha2.h, rotl/rotr/bswap
+#include "qproto/qproto_authorizers.h"
+#include "qproto/qproto_utils.h"
+#include "qproto/qproto_ministeamid.h"
+#include "qproto/qproto_cfg.h"
+#include "qproto/precompiled.h"	// Rijndael.h, sha2.h, rotl/rotr/bswap
 #include <cstring>
 
 // Ported from classic's classic_authorizers.cpp (GPLv3): the RevEmu-family ticket

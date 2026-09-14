@@ -1,6 +1,6 @@
 // Standalone sanity check for the ported Rijndael/SHA files: known test vectors only,
 // no engine/qproto-specific logic. Not part of the plugin build.
-#include "precompiled.h"
+#include "qproto/precompiled.h"
 #include <cstdio>
 
 static bool hexEq(const unsigned char* data, size_t len, const char* hex)

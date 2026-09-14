@@ -1,4 +1,4 @@
-#include "precompiled.h"
+#include "qproto/precompiled.h"
 
 const int CRijndael::sm_alog[256] =
 {

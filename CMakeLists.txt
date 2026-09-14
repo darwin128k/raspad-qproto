@@ -37,22 +37,24 @@ endif()
 # ============================================================================
 
 add_library(qproto SHARED
-	src/h_export.cpp
-	src/meta_api.cpp
-	src/dllapi.cpp
-	src/qproto_metamod_compat.cpp
-	src/qproto_hook.cpp
-	src/qproto_log.cpp
-	src/qproto_cfg.cpp
-	src/qproto_authorizers.cpp
-	src/qproto_utils.cpp
-	src/Rijndael.cpp
-	src/sha2.cpp
+	src/qproto/h_export.cpp
+	src/qproto/meta_api.cpp
+	src/qproto/dllapi.cpp
+	src/qproto/qproto_metamod_compat.cpp
+	src/qproto/qproto_hook.cpp
+	src/qproto/qproto_log.cpp
+	src/qproto/qproto_cfg.cpp
+	src/qproto/qproto_authorizers.cpp
+	src/qproto/qproto_utils.cpp
+	src/qproto/Rijndael.cpp
+	src/qproto/sha2.cpp
 	${DEP_METAMOD}/sdk_util.cpp
 )
 
+# "include" (not "include/qproto") - our own code says #include "qproto/foo.h", so
+# the qproto/ path segment must come from the directory name, not the include root.
 target_include_directories(qproto PRIVATE
-	src
+	include
 	${DEP_METAMOD}
 	${DEP_HLSDK}/dlls
 	${DEP_HLSDK}/engine
@@ -89,8 +91,8 @@ if(QPROTO_BUILD_TESTS)
 	enable_testing()
 
 	function(qproto_add_test name)
-		add_executable(${name} src/${name}.cpp ${ARGN})
-		target_include_directories(${name} PRIVATE src)
+		add_executable(${name} src/qproto/${name}.cpp ${ARGN})
+		target_include_directories(${name} PRIVATE include)
 		target_compile_options(${name} PRIVATE ${QPROTO_M32_FLAGS})
 		target_link_options(${name} PRIVATE ${QPROTO_M32_FLAGS})
 		add_test(NAME ${name} COMMAND ${name})
@@ -99,15 +101,15 @@ if(QPROTO_BUILD_TESTS)
 	# qproto_cfg_stub.cpp provides g_qprotoConfig (defaults: everything on) without
 	# pulling in the real Qproto_Cfg_Load()'s g_engfuncs dependency - these tests call
 	# the authorizer functions directly and never touch config file loading itself.
-	qproto_add_test(crypto_selftest src/Rijndael.cpp src/sha2.cpp)
-	qproto_add_test(authorizers_selftest src/qproto_authorizers.cpp src/qproto_cfg_stub.cpp src/qproto_utils.cpp src/Rijndael.cpp src/sha2.cpp)
-	qproto_add_test(oldrevemu_selftest src/qproto_authorizers.cpp src/qproto_cfg_stub.cpp src/qproto_utils.cpp src/Rijndael.cpp src/sha2.cpp)
+	qproto_add_test(crypto_selftest src/qproto/Rijndael.cpp src/qproto/sha2.cpp)
+	qproto_add_test(authorizers_selftest src/qproto/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp src/qproto/qproto_utils.cpp src/qproto/Rijndael.cpp src/qproto/sha2.cpp)
+	qproto_add_test(oldrevemu_selftest src/qproto/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp src/qproto/qproto_utils.cpp src/qproto/Rijndael.cpp src/qproto/sha2.cpp)
 
 	# Exercises the actual mprotect+JMP detour mechanism against a real engine_i486.so
 	# via dlopen - never calls through the patched function (see the file's own header
 	# comment for why), just proves install/restore is byte-exact. Needs a real engine
 	# binary, so it's opt-in via QPROTO_TEST_ENGINE_PATH rather than always-on.
-	add_executable(hook_patch_selftest src/hook_patch_selftest.cpp)
+	add_executable(hook_patch_selftest src/qproto/hook_patch_selftest.cpp)
 	target_compile_options(hook_patch_selftest PRIVATE ${QPROTO_M32_FLAGS})
 	target_link_options(hook_patch_selftest PRIVATE ${QPROTO_M32_FLAGS})
 	target_link_libraries(hook_patch_selftest PRIVATE dl)

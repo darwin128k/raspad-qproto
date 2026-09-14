@@ -6,10 +6,10 @@
 #include <extdll.h>
 #include <meta_api.h>
 #include "sdk_util.h"
-#include "qproto_hook.h"
-#include "qproto_log.h"
+#include "qproto/qproto_hook.h"
+#include "qproto/qproto_log.h"
 #include <cstdio>
-#include "qproto_cfg.h"
+#include "qproto/qproto_cfg.h"
 
 static META_FUNCTIONS gMetaFunctionTable = {
 	NULL,			// pfnGetEntityAPI

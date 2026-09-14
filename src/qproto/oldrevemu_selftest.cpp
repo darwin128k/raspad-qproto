@@ -1,5 +1,5 @@
-#include "precompiled.h"
-#include "qproto_authorizers.h"
+#include "qproto/precompiled.h"
+#include "qproto/qproto_authorizers.h"
 #include <cstdio>
 #include <cstring>
 #include <cstdint>

@@ -11,8 +11,8 @@
 #include <cstdlib>
 #include <string>
 
-#include "classic_shared.h"
-#include "qproto_bits.h"
+#include "qproto/classic_shared.h"
+#include "qproto/qproto_bits.h"
 
-#include "sha2.h"
-#include "Rijndael.h"
+#include "qproto/sha2.h"
+#include "qproto/Rijndael.h"

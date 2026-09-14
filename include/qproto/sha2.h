@@ -41,7 +41,7 @@
 #ifndef __SHA2C_H__
 #define __SHA2C_H__
 
-#include "classic_shared.h"
+#include "qproto/classic_shared.h"
 #include <string>
 #include <iostream>
 
