@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Metamod plugin build removed.** Runtime module and core sources live in
+  [rapad-authum](https://github.com/darwin128k/rapad-authum) (`src/modules/qproto`).
+  This repo keeps sample config, license, and docs; CI no longer ships `qproto_i386.so`.
+
 ## [1.0.0] - 2026-10-19
 
 First tagged release of qproto as a Metamod-P plugin for classic HLDS.

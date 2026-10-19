@@ -5,65 +5,46 @@
 <h1 align="center">qproto</h1>
 
 <p align="center">
-  <b>1.0.0</b> — Metamod-P auth plugin for classic HLDS<br>
+  <b>1.0.0+</b> — Authum module for classic HLDS<br>
   dproto-style non-Steam authorization + Vellum ticket protocol
 </p>
 
 <p align="center">
   <a href="LICENSE">Apache-2.0</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
-  <a href="https://github.com/darwin128k/raspad-qproto">GitHub</a>
+  <a href="https://github.com/darwin128k/raspad-qproto">GitHub</a> ·
+  <a href="https://github.com/darwin128k/rapad-authum">Authum host</a>
 </p>
 
 ---
 
-## What it is
+## Where the code lives
 
-Metamod-P plugin for **classic HLDS** (not ReHLDS — use [classic](https://github.com/rehlds/classic) there). Hooks `Steam_NotifyClientConnect`, accepts known emulator tickets, writes AuthID into `client_t::network_userid`.
+**Shipping module:** [rapad-authum](https://github.com/darwin128k/rapad-authum) → `src/modules/qproto/`  
+(Authum ABI 0.2 client: `authum_module_api`, host facade, vendored hook/cfg/crypto core).
 
-- RevEmu / RevEmu2013 / SC2009 / OldRevEmu
-- sXe Injected (`*HID`)
-- **Vellum** (replica ticket protocol; opt-in via `EnableVellum = 1`)
-- Setti, NoSteam47/48, SteamPending
-- `cid_*` like `dproto.cfg`
-- Auto engine layout: classic (~8684) and HLDS **10211**
-- Hardware-key bans (`qproto_bans.cfg`)
-- C API for other plugins (`include/qproto/qproto_api.h`)
+This repository keeps sample `qproto.cfg`, license/NOTICE, and release history.  
+The standalone **Metamod-P** plugin build (`qproto_i386.so` via `plugins.ini`) is **retired**.
 
-## Install
+## Install (Authum)
 
-Ready Linux binary: download `qproto_i386.so` from
-[Releases](https://github.com/darwin128k/raspad-qproto/releases) (CI builds it on every `master` push and attaches it to version tags).
+1. Build / download `authum_mm.so` and `modules/qproto/qproto.so` from Authum.
+2. Drop under `cstrike/addons/authum/` (host) and `addons/authum/modules/qproto/`.
+3. List `qproto` in `modules.list`.
+4. Put `qproto.cfg` (and optional `qproto_bans.cfg`) next to the module.
 
-1. Put into `cstrike/addons/qproto/`:
-   - `qproto_i386.so`
-   - `qproto.cfg`
-   - `qproto_bans.cfg` (optional)
-2. In `addons/metamod/plugins.ini`:
-
-```text
-linux addons/qproto/qproto_i386.so
-```
-
-3. `meta list` → `qproto` RUN
-
-`qproto.cfg` / `qproto_bans.cfg` search order (first hit wins):
-
-1. `cstrike/addons/qproto/`
-2. `cstrike/`
-3. HLDS root (next to `hlds_run`)
+Load Authum from Metamod as usual; Authum loads `qproto`.
 
 ## Build
 
 ```bash
+# In the Authum checkout:
 git submodule update --init --recursive
-cmake -S . -B build-linux32 -DCMAKE_BUILD_TYPE=Release
-cmake --build build-linux32 -j
+# CI / local: clone metamod-p into lib/metamod-p if needed
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAUTHUM_BUILD_QPROTO=ON
+cmake --build build --target authum qproto_authum
+# → build/modules/qproto/qproto.so
 ```
-
-Linux CI (GitHub Actions) builds `qproto_i386.so` on `master` only. Tag `v*` (or run the **Release** workflow with an existing tag) publishes the `.so` as a release asset.
-
-32-bit toolchain required (`-m32`). Output: `qproto_i386.so`.
 
 ## Config
 
