@@ -10,10 +10,10 @@
 // is what actually sticks. authdata_t::authKeyKind/authKey/authKeyLen (populated by
 // every authorizer in qproto_authorizers.cpp) exist specifically to make this possible.
 //
-// Loaded from qproto_bans.cfg (server root, next to qproto.cfg): one hex-encoded key
-// per line. qproto_hook.cpp logs the exact hex string for every successfully emulated
-// auth, so running a client once and copying that line into qproto_bans.cfg is the
-// intended workflow for banning them.
+// Loaded from qproto_bans.cfg (search: addons/qproto/ → gamedir → HLDS root; see
+// qproto_paths.h): one hex-encoded key per line. qproto_hook.cpp logs the exact hex
+// string for every successfully emulated auth, so running a client once and copying
+// that line into qproto_bans.cfg is the intended workflow for banning them.
 
 void Qproto_Bans_Load();
 bool Qproto_Bans_IsBanned(const uint8_t* key, size_t len);

@@ -3,6 +3,7 @@
 #include <enginecallback.h>
 #include "qproto/qproto_bans.h"
 #include "qproto/qproto_log.h"
+#include "qproto/qproto_paths.h"
 #include "qproto/qproto_shared.h"	// MAX_AUTHKEY_LEN
 
 #include <cstdio>
@@ -106,16 +107,11 @@ void Qproto_Bans_Load()
 {
 	g_numBans = 0;
 
-	char gameDir[256] = {};
-	(*g_engfuncs.pfnGetGameDir)(gameDir);
-
-	// qproto_bans.cfg lives at the server root, next to qproto.cfg/dproto.cfg - same
-	// convention as Qproto_Cfg_Load() in qproto_cfg.cpp.
-	snprintf(g_path, sizeof(g_path), "%s/../qproto_bans.cfg", gameDir);
-
-	FILE* f = fopen(g_path, "r");
+	// Same search order as qproto.cfg. If missing, g_path defaults to
+	// addons/qproto/qproto_bans.cfg so new bans from the API land next to the .so.
+	FILE* f = Qproto_OpenDataFile("qproto_bans.cfg", g_path, sizeof(g_path));
 	if (!f) {
-		Qproto_Log("qproto_bans.cfg not found at %s - HW-id ban list empty", g_path);
+		Qproto_Log("qproto_bans.cfg not found - HW-id ban list empty (new bans → %s)", g_path);
 		return;
 	}
 

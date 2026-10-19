@@ -3,6 +3,7 @@
 #include <enginecallback.h>
 #include "qproto/qproto_cfg.h"
 #include "qproto/qproto_log.h"
+#include "qproto/qproto_paths.h"
 
 #include <cstdio>
 #include <cstring>
@@ -31,17 +32,11 @@ void RTrim(char* s)
 
 void Qproto_Cfg_Load()
 {
-	char gameDir[256] = {};
-	(*g_engfuncs.pfnGetGameDir)(gameDir);
-
-	// dproto.cfg lives at the server root (one level above the mod dir, e.g. "cstrike/..")
-	// - match that convention so admins have one place to look for both.
+	// First hit wins: addons/qproto/ → gamedir (cstrike/) → HLDS root. See qproto_paths.h.
 	char path[512];
-	snprintf(path, sizeof(path), "%s/../qproto.cfg", gameDir);
-
-	FILE* f = fopen(path, "r");
+	FILE* f = Qproto_OpenDataFile("qproto.cfg", path, sizeof(path));
 	if (!f) {
-		Qproto_Log("qproto.cfg not found at %s - using defaults (AllowIPFallback=0)", path);
+		Qproto_Log("qproto.cfg not found (tried addons/qproto, gamedir, server root) - using defaults");
 		return;
 	}
 

@@ -45,6 +45,7 @@ add_library(qproto SHARED
 	src/qproto/qproto_engine.cpp
 	src/qproto/qproto_log.cpp
 	src/qproto/qproto_cfg.cpp
+	src/qproto/qproto_paths.cpp
 	src/qproto/qproto_authorizers.cpp
 	src/qproto/qproto_utils.cpp
 	src/qproto/qproto_bans.cpp
