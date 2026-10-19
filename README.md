@@ -32,6 +32,9 @@ Metamod-P plugin for **classic HLDS** (not ReHLDS — use [classic](https://gith
 
 ## Install
 
+Ready Linux binary: download `qproto_i386.so` from
+[Releases](https://github.com/darwin128k/raspad-qproto/releases) (CI builds it on every `master` push and attaches it to version tags).
+
 1. Put into `cstrike/addons/qproto/`:
    - `qproto_i386.so`
    - `qproto.cfg`
@@ -57,6 +60,8 @@ git submodule update --init --recursive
 cmake -S . -B build-linux32 -DCMAKE_BUILD_TYPE=Release
 cmake --build build-linux32 -j
 ```
+
+Linux CI (GitHub Actions) builds `qproto_i386.so` on `master` only. Tag `v*` (or run the **Release** workflow with an existing tag) publishes the `.so` as a release asset.
 
 32-bit toolchain required (`-m32`). Output: `qproto_i386.so`.
 

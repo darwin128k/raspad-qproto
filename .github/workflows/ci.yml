@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux32:
+    name: Linux i386 Release
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install i386 toolchain
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            gcc-multilib g++-multilib cmake ninja-build \
+            libc6-dev-i386 libstdc++-12-dev-i386
+
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DQPROTO_BUILD_TESTS=OFF
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Strip
+        run: strip --strip-unneeded build/qproto_i386.so
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qproto_i386.so
+          path: build/qproto_i386.so
+          if-no-files-found: error
