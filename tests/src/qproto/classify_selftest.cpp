@@ -5,6 +5,7 @@
 // (classic also has a CHLTVAuthorizer - deliberately not ported, see qproto_shared.h's
 // comment on CA_HLTV's removal for why an HLTV connection can never reach this code.)
 #include "qproto/qproto_authorizers.h"
+#include "qproto/vellum_ticket.h"
 #include <cstdio>
 #include <cstring>
 
@@ -91,6 +92,21 @@ int main()
 		client_auth_kind kind = Qproto_Authorize_Client(&authdata, true, true);
 		bool ok = kind == CA_NO_STEAM_47;
 		printf("[%s] Qproto_Authorize_Client falls back to NoSteam47 with no ticket (got kind=%d)\n", ok ? "OK" : "FAIL", (int)kind);
+		if (!ok) failures++;
+	}
+
+	// 6) Vellum ticket is recognized as CA_VELLUM, not a RevEmu-family kind.
+	{
+		VellumTicket t = {};
+		const char *ident = "TESTPC-DEADBEEF";
+		Vellum_FillTicket(&t, ident, strlen(ident));
+		authdata_t authdata = {};
+		authdata.authTicket = (const uint8_t*)&t;
+		authdata.ticketLen = sizeof(t);
+		authdata.protocol = 48;
+		client_auth_kind kind = Qproto_Authorize_Client(&authdata, true, true);
+		bool ok = kind == CA_VELLUM;
+		printf("[%s] Qproto_Authorize_Client classifies Vellum ticket (got kind=%d)\n", ok ? "OK" : "FAIL", (int)kind);
 		if (!ok) failures++;
 	}
 

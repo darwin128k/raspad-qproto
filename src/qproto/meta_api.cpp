@@ -26,7 +26,7 @@ static META_FUNCTIONS gMetaFunctionTable = {
 plugin_info_t Plugin_info = {
 	META_INTERFACE_VERSION,
 	"qproto",
-	"0.1",
+	"0.2",
 	__DATE__,
 	"raspad-server",
 	"",
@@ -66,12 +66,14 @@ C_DLLEXPORT int Meta_Attach(PLUG_LOADTIME /*now*/, META_FUNCTIONS* pFunctionTabl
 	Qproto_Cfg_Load();
 	Qproto_Log_Init(g_qprotoConfig.loggingMode);
 	Qproto_Log("Meta_Attach called, installing hook...");
-	Qproto_Log("config: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
+	Qproto_Log("qproto 0.2 Vellum authorizer built-in");
+	Qproto_Log("config: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Vellum=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
 		(int)g_qprotoConfig.enableRevEmu, (int)g_qprotoConfig.cidRevEmu,
 		(int)g_qprotoConfig.enableRevEmu2013, (int)g_qprotoConfig.cidRevEmu2013,
 		(int)g_qprotoConfig.enableSC2009, (int)g_qprotoConfig.cidSC2009,
 		(int)g_qprotoConfig.enableOldRevEmu, (int)g_qprotoConfig.cidOldRevEmu,
 		(int)g_qprotoConfig.enableSXEI, (int)g_qprotoConfig.cidSXEI,
+		(int)g_qprotoConfig.enableVellum, (int)g_qprotoConfig.cidVellum,
 		(int)g_qprotoConfig.cidSteam,
 		(int)g_qprotoConfig.cidSetti,
 		(int)g_qprotoConfig.cidNoSteam47, (int)g_qprotoConfig.cidNoSteam48,

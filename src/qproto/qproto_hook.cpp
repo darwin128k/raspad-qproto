@@ -149,6 +149,7 @@ client_id_kind CidForAuthKind(client_auth_kind kind)
 		case CA_NO_STEAM_48: return g_qprotoConfig.cidNoSteam48;
 		case CA_STEAM_PENDING: return g_qprotoConfig.cidSteamPending;
 		case CA_SXEI: return g_qprotoConfig.cidSXEI;
+		case CA_VELLUM: return g_qprotoConfig.cidVellum;
 		case CA_STEAM: return g_qprotoConfig.cidSteam;
 		default: return CI_UNKNOWN;
 	}
@@ -163,7 +164,7 @@ bool IsNumericAuthKind(client_auth_kind kind)
 {
 	switch (kind) {
 		case CA_OLD_REVEMU: case CA_REVEMU: case CA_STEAMCLIENT_2009: case CA_REVEMU_2013:
-		case CA_SXEI: case CA_STEAM:
+		case CA_SXEI: case CA_VELLUM: case CA_STEAM:
 			return true;
 		default:
 			return false;
@@ -182,6 +183,7 @@ const char* Qproto_GetAuthorizerName(client_auth_kind kind)
 		case CA_NO_STEAM_48: return "NoSteam48";
 		case CA_STEAM_PENDING: return "Steam_PENDING";
 		case CA_SXEI: return "sXe";
+		case CA_VELLUM: return "Vellum";
 		case CA_STEAM: return "Steam";
 		default: return "unknown";
 	}
@@ -201,6 +203,7 @@ const char* RejectMessageForAuthKind(client_auth_kind kind)
 		case CA_OLD_REVEMU: return g_qprotoConfig.rejMsgOldRevEmu;
 		case CA_SETTI: return g_qprotoConfig.rejMsgSetti;
 		case CA_SXEI: return g_qprotoConfig.rejMsgSXEI;
+		case CA_VELLUM: return g_qprotoConfig.rejMsgVellum;
 		case CA_STEAM_PENDING: return g_qprotoConfig.rejMsgSteamPending;
 		default: return g_qprotoConfig.rejMsgUnknown;
 	}

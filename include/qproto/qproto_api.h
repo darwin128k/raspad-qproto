@@ -24,7 +24,7 @@
 // qproto_authkind_t below mirrors client_auth_kind but is its own stable enum.
 
 #define QPROTO_API_VERSION_MAJOR 1
-#define QPROTO_API_VERSION_MINOR 0
+#define QPROTO_API_VERSION_MINOR 1
 
 #define QPROTO_LONG_AUTHID_LEN 16
 
@@ -40,6 +40,7 @@ typedef enum {
 	QPROTO_AUTH_SC2009,
 	QPROTO_AUTH_REVEMU_2013,
 	QPROTO_AUTH_SXEI,
+	QPROTO_AUTH_VELLUM,
 } qproto_authkind_t;
 
 // What KIND of raw value qproto_get_client_authkey() returned - matters a lot for ban

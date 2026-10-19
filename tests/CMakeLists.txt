@@ -29,6 +29,7 @@ endfunction()
 qproto_add_test(crypto_selftest ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 qproto_add_test(authorizers_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 qproto_add_test(oldrevemu_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
+qproto_add_test(vellum_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 qproto_add_test(classify_selftest ${QPROTO_SRC}/qproto_authorizers.cpp src/qproto/qproto_cfg_stub.cpp ${QPROTO_SRC}/qproto_utils.cpp ${QPROTO_SRC}/Rijndael.cpp ${QPROTO_SRC}/sha2.cpp)
 
 # qproto_bans.cpp isn't fully engine-free (Load/Add/Remove touch g_engfuncs) unlike the

@@ -10,6 +10,7 @@ struct QprotoConfig
 	bool enableSC2009 = true;      // SteamClient 2009 (178-byte, AES+SHA256)
 	bool enableOldRevEmu = true;   // legacy 10-byte XOR ticket
 	bool enableSXEI = true;        // sXe Injected anti-cheat hardware id ("*HID" userinfo key)
+	bool enableVellum = true;      // raspad-revloader steamclient (64-byte VLLM ticket)
 
 	// cid_* (client_id_kind, same numbering/meaning as dproto.cfg's cid_RevEmu etc. -
 	// see qproto_shared.h): which id format a *successfully authorized* client of
@@ -26,6 +27,7 @@ struct QprotoConfig
 	client_id_kind cidSC2009 = CI_REAL_STEAM;
 	client_id_kind cidOldRevEmu = CI_REAL_STEAM;
 	client_id_kind cidSXEI = CI_REAL_STEAM;
+	client_id_kind cidVellum = CI_REAL_STEAM;
 
 	// Non-emulator client_auth_kind cases, ported from classic's client_auth.cpp
 	// (CSettiAuthorizer/CNoSteam47/48Authorizer + the CA_STEAM_PENDING reclassification
@@ -70,6 +72,7 @@ struct QprotoConfig
 	char rejMsgOldRevEmu[128] = "Sorry, Old RevEmu clients are not allowed on this server.";
 	char rejMsgSetti[128] = "Sorry, Setti is not allowed on this server.";
 	char rejMsgSXEI[128] = "Sorry, sXe Injected clients are not allowed on this server.";
+	char rejMsgVellum[128] = "Sorry, Vellum clients are not allowed on this server.";
 	char rejMsgSteamPending[128] = "Sorry, unauthorized/pending clients are not allowed on this server.";
 };
 

@@ -24,6 +24,7 @@ qproto_authkind_t MapAuthKind(client_auth_kind kind)
 		case CA_STEAMCLIENT_2009: return QPROTO_AUTH_SC2009;
 		case CA_REVEMU_2013: return QPROTO_AUTH_REVEMU_2013;
 		case CA_SXEI: return QPROTO_AUTH_SXEI;
+		case CA_VELLUM: return QPROTO_AUTH_VELLUM;
 		default: return QPROTO_AUTH_NONE;
 	}
 }

@@ -49,6 +49,7 @@ enum client_auth_kind {
 	CA_STEAMCLIENT_2009,	// SteamClient (alias for revemu) (authorization by serial number of first HDD in the system)
 	CA_REVEMU_2013,			// RevEmu (authorization by serial number of first HDD in the system)
 	CA_SXEI,				// Authorization by sXe Injected anticheat ID.
+	CA_VELLUM,				// raspad-revloader steamclient (64-byte VLLM ticket)
 
 	CA_MAX,
 };

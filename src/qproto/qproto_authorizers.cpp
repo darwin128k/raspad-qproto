@@ -2,6 +2,7 @@
 #include "qproto/qproto_utils.h"
 #include "qproto/qproto_ministeamid.h"
 #include "qproto/qproto_cfg.h"
+#include "qproto/vellum_ticket.h"
 #include "qproto/precompiled.h"	// Rijndael.h, sha2.h, rotl/rotr/bswap
 #include <cstring>
 #include <cstdio>	// sscanf, SXEIAuthorize
@@ -319,6 +320,25 @@ client_auth_kind SXEIAuthorize(authdata_t* authdata)
 	return CA_SXEI;
 }
 
+client_auth_kind VellumAuthorize(authdata_t* authdata)
+{
+	if (authdata->ticketLen != sizeof(VellumTicket))
+		return CA_UNKNOWN;
+
+	const VellumTicket* ticket = (const VellumTicket*)authdata->authTicket;
+	if (!Vellum_TicketValid(ticket, authdata->ticketLen))
+		return CA_UNKNOWN;
+
+	authdata->steamId = ticket->account_id;
+	authdata->authKeyKind = AK_OTHER;
+	authdata->authKeyLen = ticket->ident_len;
+	if (authdata->authKeyLen > MAX_AUTHKEY_LEN)
+		authdata->authKeyLen = MAX_AUTHKEY_LEN;
+	memcpy(authdata->authKey, ticket->ident, authdata->authKeyLen);
+	authdata->authKey[authdata->authKeyLen] = '\0';
+	return CA_VELLUM;
+}
+
 client_auth_kind Qproto_Authorize_Client(authdata_t* authdata, bool /*sc2009RevCompat*/, bool /*forceAuthVersion2018Plus*/)
 {
 	client_auth_kind r;
@@ -330,6 +350,7 @@ client_auth_kind Qproto_Authorize_Client(authdata_t* authdata, bool /*sc2009RevC
 	if ((r = SXEIAuthorize(authdata)) != CA_UNKNOWN) return r;
 	if ((r = SettiAuthorize(authdata)) != CA_UNKNOWN) return r;
 
+	if (g_qprotoConfig.enableVellum && (r = VellumAuthorize(authdata)) != CA_UNKNOWN) return r;
 	if (g_qprotoConfig.enableRevEmu && (r = RevEmuAuthorize(authdata)) != CA_UNKNOWN) return r;
 	if (g_qprotoConfig.enableRevEmu2013 && (r = RevEmu2013Authorize(authdata)) != CA_UNKNOWN) return r;
 	if (g_qprotoConfig.enableSC2009 && (r = SteamClient2009Authorize(authdata)) != CA_UNKNOWN) return r;

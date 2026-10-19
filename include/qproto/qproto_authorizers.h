@@ -53,8 +53,10 @@ client_auth_kind NoSteam48Authorize(authdata_t* authdata);
 // starting with '*' via a plain setinfo). Config-gated (EnableSXEI) like classic's
 // own isSXEIAuthEnabled() cvar.
 client_auth_kind SXEIAuthorize(authdata_t* authdata);
+client_auth_kind VellumAuthorize(authdata_t* authdata);
 
-// Tries all v1 authorizers in turn (RevEmu family only); returns CA_UNKNOWN if none match.
+// Tries all authorizers in turn (Vellum first among tickets, then RevEmu family);
+// returns CA_UNKNOWN if none match.
 // sc2009RevCompat / forceAuthVersion2018Plus mirror dproto.cfg's SC2009_RevCompatMode and
 // gate a stricter special-char-stripping mode classic added in its 2018 wire revision.
 client_auth_kind Qproto_Authorize_Client(authdata_t* authdata, bool sc2009RevCompat, bool forceAuthVersion2018Plus);
