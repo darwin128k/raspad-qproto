@@ -31,7 +31,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             gcc-multilib g++-multilib cmake ninja-build \
-            libc6-dev-i386 libstdc++-12-dev-i386
+            libc6-dev:i386 libstdc++-12-dev:i386
 
       - name: Configure
         run: |
