@@ -23,7 +23,7 @@ Metamod-P plugin for **classic HLDS** (not ReHLDS — use [classic](https://gith
 
 - RevEmu / RevEmu2013 / SC2009 / OldRevEmu
 - sXe Injected (`*HID`)
-- **Vellum** (replica ticket protocol)
+- **Vellum** (replica ticket protocol; opt-in via `EnableVellum = 1`)
 - Setti, NoSteam47/48, SteamPending
 - `cid_*` like `dproto.cfg`
 - Auto engine layout: classic (~8684) and HLDS **10211**

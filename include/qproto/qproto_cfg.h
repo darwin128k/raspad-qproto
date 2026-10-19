@@ -16,7 +16,7 @@ struct QprotoConfig
 	bool enableSC2009 = true;      // SteamClient 2009 (178-byte, AES+SHA256)
 	bool enableOldRevEmu = true;   // legacy 10-byte XOR ticket
 	bool enableSXEI = true;        // sXe Injected anti-cheat hardware id ("*HID" userinfo key)
-	bool enableVellum = true;      // raspad-revloader steamclient (64-byte VLLM ticket)
+	bool enableVellum = false;     // VLLM ticket — opt-in via EnableVellum=1 in qproto.cfg
 
 	// cid_* (client_id_kind, same numbering/meaning as dproto.cfg's cid_RevEmu etc. -
 	// see qproto_shared.h): which id format a *successfully authorized* client of
