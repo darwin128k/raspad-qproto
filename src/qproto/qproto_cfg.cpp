@@ -65,7 +65,15 @@ void Qproto_Cfg_Load()
 		char* keyEnd = eq - 1;
 		while (keyEnd >= key && (*keyEnd == ' ' || *keyEnd == '\t')) *keyEnd-- = '\0';
 
-		if (strcasecmp(key, "EnableRevEmu") == 0) {
+		if (strcasecmp(key, "EngineLayout") == 0) {
+			if (strcasecmp(value, "classic") == 0 || strcasecmp(value, "8684") == 0 || strcasecmp(value, "2018") == 0)
+				g_qprotoConfig.engineLayout = QPROTO_LAYOUT_CLASSIC;
+			else if (strcasecmp(value, "10211") == 0 || strcasecmp(value, "build10211") == 0)
+				g_qprotoConfig.engineLayout = QPROTO_LAYOUT_BUILD10211;
+			else
+				g_qprotoConfig.engineLayout = QPROTO_LAYOUT_AUTO;
+		}
+		else if (strcasecmp(key, "EnableRevEmu") == 0) {
 			g_qprotoConfig.enableRevEmu = atoi(value) != 0;
 		}
 		else if (strcasecmp(key, "EnableRevEmu2013") == 0) {

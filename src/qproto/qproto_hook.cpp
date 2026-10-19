@@ -38,20 +38,17 @@
 #include "qproto/qproto_cfg.h"
 #include "qproto/qproto_bans.h"
 #include "qproto/qproto_client_state.h"
+#include "qproto/qproto_engine.h"
 #include "sdk_util.h"
 #include <cstdio>
 
 namespace {
-
-const uintptr_t kNetworkUseridOffset = 0x4a90; // client_t::network_userid, confirmed via DWARF
-const uintptr_t kRemoteAddressOffset = 0x20; // client_t::netchan.remote_address (netadr_t), confirmed via DWARF: netchan @client_t+0x1c, remote_address @netchan_t+0x4
 
 typedef int (*SteamNotifyClientConnect_t)(void* client, char* authBuf, int len);
 typedef char* (*CmdArgv_t)(int);
 typedef char* (*InfoValueForKey_t)(char*, char*);
 typedef void (*SVRejectConnection_t)(void* adr, const char* fmt, ...);
 
-void* g_engineHandle;
 void* g_hookTarget;
 SteamNotifyClientConnect_t g_real;
 CmdArgv_t g_Cmd_Argv;
@@ -59,6 +56,8 @@ InfoValueForKey_t g_Info_ValueForKey;
 SVRejectConnection_t g_SV_RejectConnection;
 unsigned char g_savedBytes[5];
 bool g_installed;
+uintptr_t g_networkUseridOffset = 0x4a90;
+uintptr_t g_remoteAddressOffset = 0x20;
 
 // Sends `message` to the still-connecting client as its own out-of-band reject packet,
 // via the real engine's SV_RejectConnection - the exact same mechanism classic uses for
@@ -73,7 +72,7 @@ bool g_installed;
 void SendCustomReject(void* client, const char* message)
 {
 	if (!g_SV_RejectConnection) return;
-	void* adr = (uint8_t*)client + kRemoteAddressOffset;
+	void* adr = (uint8_t*)client + g_remoteAddressOffset;
 	g_SV_RejectConnection(adr, "%s\n", message); // literal format string - message is never itself a format string
 }
 
@@ -249,7 +248,7 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 
 	Qproto_Log("native Steam_NotifyClientConnect returned %d", result);
 
-	uint8_t* base = (uint8_t*)client + kNetworkUseridOffset;
+	uint8_t* base = (uint8_t*)client + g_networkUseridOffset;
 	uint32_t clientIp = *(uint32_t*)(base + 0xc); // already filled in by SV_ConnectClient before this call runs
 
 	if (result) {
@@ -383,26 +382,30 @@ bool Qproto_Hook_Install()
 {
 	if (g_installed) return true;
 
-	g_engineHandle = dlopen("engine_i486.so", RTLD_NOW | RTLD_NOLOAD);
-	if (!g_engineHandle) {
-		Qproto_Log("dlopen(engine_i486.so, RTLD_NOLOAD) FAILED: %s", dlerror());
-		return false;
-	}
-	Qproto_Log("dlopen(engine_i486.so, RTLD_NOLOAD) ok, handle=%p", g_engineHandle);
-
-	dlerror();
-	void* sym = dlsym(g_engineHandle, "Steam_NotifyClientConnect");
+	bool viaDynsym = false;
+	void* sym = Qproto_Engine_Resolve("Steam_NotifyClientConnect", &viaDynsym);
 	if (!sym) {
-		Qproto_Log("dlsym(Steam_NotifyClientConnect) FAILED: %s", dlerror());
+		Qproto_Log("resolve(Steam_NotifyClientConnect) FAILED");
 		return false;
 	}
+
+	const QprotoEngineLayoutInfo& layout =
+		Qproto_Engine_SelectLayout(g_qprotoConfig.engineLayout, viaDynsym);
+	g_networkUseridOffset = layout.networkUseridOffset;
+	g_remoteAddressOffset = layout.remoteAddressOffset;
+	Qproto_Log("engine layout: %s (override=%s, viaDynsym=%d) network_userid=+0x%lx remote_address=+0x%lx",
+		layout.name,
+		Qproto_Engine_LayoutName(g_qprotoConfig.engineLayout),
+		(int)viaDynsym,
+		(unsigned long)g_networkUseridOffset,
+		(unsigned long)g_remoteAddressOffset);
 
 	g_hookTarget = sym;
 	g_real = (SteamNotifyClientConnect_t)sym;
 
-	g_Cmd_Argv = (CmdArgv_t)dlsym(g_engineHandle, "Cmd_Argv");
-	g_Info_ValueForKey = (InfoValueForKey_t)dlsym(g_engineHandle, "Info_ValueForKey");
-	g_SV_RejectConnection = (SVRejectConnection_t)dlsym(g_engineHandle, "SV_RejectConnection");
+	g_Cmd_Argv = (CmdArgv_t)Qproto_Engine_Resolve("Cmd_Argv", nullptr);
+	g_Info_ValueForKey = (InfoValueForKey_t)Qproto_Engine_Resolve("Info_ValueForKey", nullptr);
+	g_SV_RejectConnection = (SVRejectConnection_t)Qproto_Engine_Resolve("SV_RejectConnection", nullptr);
 	Qproto_Log("Cmd_Argv=%p Info_ValueForKey=%p SV_RejectConnection=%p",
 		(void*)g_Cmd_Argv, (void*)g_Info_ValueForKey, (void*)g_SV_RejectConnection);
 

@@ -42,6 +42,7 @@ add_library(qproto SHARED
 	src/qproto/dllapi.cpp
 	src/qproto/qproto_metamod_compat.cpp
 	src/qproto/qproto_hook.cpp
+	src/qproto/qproto_engine.cpp
 	src/qproto/qproto_log.cpp
 	src/qproto/qproto_cfg.cpp
 	src/qproto/qproto_authorizers.cpp

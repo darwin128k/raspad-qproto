@@ -1,9 +1,15 @@
 #pragma once
 
 #include "qproto/qproto_shared.h"
+#include "qproto/qproto_engine.h"
 
 struct QprotoConfig
 {
+	// Which client_t / export layout to use when hooking engine_i486.so.
+	// auto (default): dynsym hit ⇒ classic (8684/2018); .symtab-only ⇒ build10211.
+	// Force with EngineLayout=classic or EngineLayout=10211 in qproto.cfg.
+	QprotoEngineLayout engineLayout = QPROTO_LAYOUT_AUTO;
+
 	// Per-emulator on/off switches, mirroring dproto.cfg's cid_* style.
 	bool enableRevEmu = true;      // RevEmu >= 9.74 (152-byte "rev"-signed ticket)
 	bool enableRevEmu2013 = true;  // RevEmu2013 (194-byte, AES+SHA256)

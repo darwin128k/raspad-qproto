@@ -2,3 +2,6 @@ build/
 build_*/
 *.o
 *.so
+
+build-linux*/
+build*/
