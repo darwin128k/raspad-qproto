@@ -1,10 +1,10 @@
 #include "qproto/qproto_api.h"
 #include "qproto/qproto_client_state.h"
 #include "qproto/qproto_bans.h"
+#include "qproto/qproto_host.h"
 #include "qproto/qproto_shared.h"
-#include "host_crypto.h"
-#include "host_engine.h"
 #include <authum/crypto.h>
+#include <authum/engine.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -180,8 +180,8 @@ qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHID_LE
 		len = sizeof(buf);
 	}
 
-	crypto = qproto_host_crypto();
-	if (!crypto)
+	crypto = g_qproto_host.crypto;
+	if (authum_null_eq(crypto))
 		return 0;
 
 	if (authum_crypto_sha_hash(crypto, authum_crypto_sha_kind_256, (authum_ptr)(void *)data,
@@ -226,7 +226,7 @@ issue_kick(int userid, const char *reason)
 	} else {
 		snprintf(cmd, sizeof(cmd), "kick #%d\n", userid);
 	}
-	authum_engine_server_command(qproto_host_engine(), cmd);
+	authum_engine_server_command(g_qproto_host.engine, cmd);
 }
 
 int

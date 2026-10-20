@@ -3,7 +3,7 @@
 #include "qproto/qproto_ministeamid.h"
 #include "qproto/qproto_cfg.h"
 #include "qproto/vellum_ticket.h"
-#include "host_crypto.h"
+#include "qproto/qproto_host.h"
 #include <authum/crypto.h>
 #include <string.h>
 #include <stdio.h>
@@ -133,8 +133,8 @@ revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, authdata_t *aut
 	if (ticket->version != VERSION || ticket->rev_signature != REVEMU_SIGNATURE || ticket->signature2 != REVEMU_SIGNATURE2)
 		return 0;
 
-	crypto = qproto_host_crypto();
-	if (!crypto)
+	crypto = g_qproto_host.crypto;
+	if (authum_null_eq(crypto))
 		return 0;
 
 	if (!authum_crypto_rijndael_init(crypto, &h_crypt1, (authum_ptr)(void *)g_revemu_crypt_key,
@@ -195,8 +195,8 @@ sc2009_ticket_authorize(const sc2009_ticket_t *ticket, authdata_t *authdata, int
 	if (ticket->version != VERSION || ticket->rev_signature != REVEMU_SIGNATURE || ticket->signature2 != REVEMU_SIGNATURE2)
 		return 0;
 
-	crypto = qproto_host_crypto();
-	if (!crypto)
+	crypto = g_qproto_host.crypto;
+	if (authum_null_eq(crypto))
 		return 0;
 
 	if (!authum_crypto_rijndael_init(crypto, &h_crypt1, (authum_ptr)(void *)g_revemu_crypt_key,

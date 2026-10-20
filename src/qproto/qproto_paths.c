@@ -1,7 +1,8 @@
-#include "host_engine.h"
 #include "qproto/qproto_data_dir.h"
+#include "qproto/qproto_host.h"
 #include "qproto/qproto_paths.h"
 
+#include <authum/engine.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -31,7 +32,7 @@ qproto_open_data_file(const char *name, char *out_path, size_t out_path_len)
 	}
 
 	memset(game_dir, 0, sizeof(game_dir));
-	authum_engine_get_game_dir(qproto_host_engine(), game_dir, (authum_usize_t)sizeof game_dir);
+	authum_engine_get_game_dir(g_qproto_host.engine, game_dir, (authum_usize_t)sizeof game_dir);
 
 	for (i = 0; i < sizeof(patterns) / sizeof(patterns[0]); i++) {
 		FILE *f;

@@ -29,8 +29,6 @@ add_library(qproto MODULE
         src/authum/info.c
         src/authum/module.c
         src/authum/bridge.c
-        src/authum/host_crypto.c
-        src/authum/host_engine.c
         src/authum/data_dir.c
         src/qproto/qproto_hook.c
         src/qproto/qproto_engine.c
