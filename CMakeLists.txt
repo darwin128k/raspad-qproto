@@ -36,6 +36,7 @@ add_library(qproto MODULE
         src/authum/module.c
         src/authum/bridge.cpp
         src/authum/host_log.cpp
+        src/authum/host_crypto.cpp
         src/authum/data_dir.cpp
         src/authum/engfuncs_shim.cpp
         src/qproto/qproto_hook.cpp
@@ -48,8 +49,6 @@ add_library(qproto MODULE
         src/qproto/qproto_api.cpp
         src/qproto/qproto_log.cpp
         src/qproto/qproto_paths.cpp
-        src/qproto/Rijndael.cpp
-        src/qproto/sha2.cpp
         "${DEP_METAMOD}/sdk_util.cpp"
 )
 

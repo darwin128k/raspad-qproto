@@ -3,7 +3,8 @@
 #include "qproto/qproto_ministeamid.h"
 #include "qproto/qproto_cfg.h"
 #include "qproto/vellum_ticket.h"
-#include "qproto/precompiled.h"	// Rijndael.h, sha2.h, rotl/rotr/bswap
+#include "qproto/precompiled.h"
+#include "host_crypto.h"
 #include <cstring>
 #include <cstdio>	// sscanf, SXEIAuthorize
 
@@ -11,6 +12,7 @@
 // format and crypto is identical across dproto/classic/qproto (same community-derived
 // wire format - confirmed independently this session by decompiling dproto's binary
 // and finding the exact same Setti magic constants at the exact same ticket offsets).
+// AES-ECB + SHA-256 go through Authum host (lh), not vendored Rijndael/sha2.
 
 #define IDREVHEADER	(('r' << 16) + ('e' << 8) + 'v')	// little-endian "rev"
 
@@ -23,7 +25,8 @@ enum
 enum
 {
 	REVEMU_KEY_LEN = 32,
-	REVEMU_BLOCK_SIZE = 32
+	REVEMU_BLOCK_SIZE = 32,
+	REVEMU_SHA256_LEN = 32
 };
 
 static const char* g_RevEmuCryptKey = "_YOU_SERIOUSLY_NEED_TO_GET_LAID_";
@@ -84,30 +87,22 @@ static bool RevEmu2009to2013Authorize(const ticket_t* ticket, authdata_t* authda
 	if (ticket->Version != VERSION || ticket->RevSignature != REVEMU_SIGNATURE || ticket->Signature2 != REVEMU_SIGNATURE2)
 		return false;
 
-	CRijndael hCrypt1;
-	hCrypt1.MakeKey(g_RevEmuCryptKey, CRijndael::sm_chain0, REVEMU_KEY_LEN, REVEMU_BLOCK_SIZE);
-
 	char DecryptedAuthKey[REVEMU_KEY_LEN];
-	if (!hCrypt1.DecryptBlock(ticket->EncryptedKey, DecryptedAuthKey))
+	if (!qproto_aes_ecb_decrypt_block(g_RevEmuCryptKey, REVEMU_KEY_LEN, ticket->EncryptedKey,
+					  DecryptedAuthKey, REVEMU_BLOCK_SIZE))
 		return false;
-
-	CRijndael hCrypt2;
-	hCrypt2.MakeKey(DecryptedAuthKey, CRijndael::sm_chain0, REVEMU_KEY_LEN, REVEMU_BLOCK_SIZE);
 
 	char DecryptedAuthData[REVEMU_BLOCK_SIZE + 1];
-	if (!hCrypt2.DecryptBlock(ticket->EncryptedData, DecryptedAuthData))
+	if (!qproto_aes_ecb_decrypt_block(DecryptedAuthKey, REVEMU_KEY_LEN, ticket->EncryptedData,
+					  DecryptedAuthData, REVEMU_BLOCK_SIZE))
 		return false;
-
-	sha2 hSha;
-	hSha.Init(sha2::enuSHA256);
-	hSha.Update((const sha_byte*)DecryptedAuthData, SHA256_DIGESTC_LENGTH);
-	hSha.End();
 
 	DecryptedAuthData[REVEMU_BLOCK_SIZE] = '\0';
 
-	int shaLen;
-	const char* cDigest = hSha.RawHash(shaLen);
-	if (memcmp(cDigest, ticket->Digest, SHA256_DIGESTC_LENGTH) != 0)
+	unsigned char digest[REVEMU_SHA256_LEN];
+	if (!qproto_sha256(DecryptedAuthData, REVEMU_SHA256_LEN, digest))
+		return false;
+	if (memcmp(digest, ticket->Digest, REVEMU_SHA256_LEN) != 0)
 		return false;
 
 	uint32_t hash = revHash(DecryptedAuthData);
@@ -133,7 +128,7 @@ struct RevEmu2013Ticket_t
 	uint32_t	Unk24;
 	char		EncryptedData[REVEMU_BLOCK_SIZE];
 	char		EncryptedKey[REVEMU_BLOCK_SIZE];
-	char		Digest[SHA256_DIGESTC_LENGTH];
+	char		Digest[REVEMU_SHA256_LEN];
 };
 
 struct SC2009Ticket_t
@@ -145,7 +140,7 @@ struct SC2009Ticket_t
 	MiniSteamID	SteamID;
 	char		EncryptedData[REVEMU_BLOCK_SIZE];
 	char		EncryptedKey[REVEMU_BLOCK_SIZE];
-	char		Digest[SHA256_DIGESTC_LENGTH];
+	char		Digest[REVEMU_SHA256_LEN];
 };
 
 struct RevTicket_t

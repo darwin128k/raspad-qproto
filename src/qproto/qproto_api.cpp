@@ -1,10 +1,11 @@
-#include "qproto/precompiled.h"	// sha2.h - pulls in <string> etc., must precede extdll.h (see below)
+#include "qproto/precompiled.h"
 #include <cmath>	// must precede extdll.h - see qproto_hook.cpp for why
 #include <extdll.h>
 #include <enginecallback.h>
 #include "qproto/qproto_api.h"
 #include "qproto/qproto_client_state.h"
 #include "qproto/qproto_bans.h"
+#include "host_crypto.h"
 
 #include <cstring>
 #include <cstdio>
@@ -158,13 +159,9 @@ int qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHI
 		len = sizeof(buf);
 	}
 
-	sha2 hSha;
-	hSha.Init(sha2::enuSHA256);
-	hSha.Update((const sha_byte*)data, len);
-	hSha.End();
-
-	int shaLen;
-	const char* digest = hSha.RawHash(shaLen);
+	unsigned char digest[32];
+	if (!qproto_sha256(data, (unsigned)len, digest))
+		return 0;
 	memcpy(out, digest, QPROTO_LONG_AUTHID_LEN);
 	return 1;
 }

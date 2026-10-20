@@ -1,4 +1,5 @@
 #include "bridge.h"
+#include "host_crypto.h"
 #include "host_log.h"
 
 #include <cmath> /* before extdll.h — HLSDK min/max macros vs C++ */
@@ -46,6 +47,11 @@ qproto_authum_start(authum_host_t *host)
 		return AUTHUM_FALSE;
 
 	qproto_host_log_bind(host);
+	qproto_host_crypto_bind(host);
+	if (!qproto_host_crypto_ready()) {
+		qproto_host_log(1, "qproto: host crypto missing (aes_ecb_decrypt_block / sha256)");
+		return AUTHUM_FALSE;
+	}
 	if (host->module_dir && host->module_dir[0])
 		qproto_set_data_dir(host->module_dir);
 
@@ -77,5 +83,6 @@ qproto_authum_stop(void)
 	qproto_hook_remove();
 	qproto_log("Authum module stop — hook removed");
 	qproto_log_close();
+	qproto_host_crypto_bind(nullptr);
 	qproto_host_log_bind(nullptr);
 }
