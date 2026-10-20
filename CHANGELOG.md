@@ -10,7 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Authum client module** (`authum_module_api` / ABI 0.2) → `qproto.so`
-- `LoggingMode` bit `qproto_log_mode_host` (4) for authum.log; default remains file-only (2)
+- `lib/authum` git submodule; CMake `add_subdirectory(lib/authum/client)` → link
+  `authum_client` (no Authum `.c` compiled into qproto)
+- Config via Authum cfg: defaults on `g_qproto_config`, `authum_cfg_apply_items`,
+  hand-parsed `EngineLayout` / validated `cid_Steam`
+- Paths / logs through `authum_path_t` + `authum_host_env_*` (no ad-hoc `data_dir`)
+- `LoggingMode` bit for authum.log (host sink); default remains file-only
+- Docs: [docs/config.md](docs/config.md)
 
 ### Changed
 
@@ -18,8 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Public API renamed to **snake_case** (`qproto_hook_install`, `qproto_log`, …)
 - Authorizers / config / ticket helpers renamed (`revemu_authorize`, `enable_revemu`, `auth_ticket`, …)
 - Branch `2.0.0` is Authum-only; Metamod plugin stays on `1.0.0`
-- RevEmu Rijndael + SHA-256 via Authum crypto facade (`host->crypto` → lh session API)
-- Engine calls (game dir / print / kick) via Authum `host->engine` (no HLSDK in the module)
+- RevEmu Rijndael + SHA-256 via Authum crypto facade (`authum_host_crypto`)
+- Engine calls via Authum host getters (no HLSDK in the module; never `host->field`)
 
 ### Removed
 
