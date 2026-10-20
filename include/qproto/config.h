@@ -4,6 +4,7 @@
 #include <authum/bool.h>
 #include <authum/byte.h>
 #include <authum/char.h>
+#include <authum/logger/file/split.h>
 #include <authum/logger/sink.h>
 
 #include <qproto/engine.h>
@@ -38,6 +39,8 @@ struct qproto_config
 	qproto_client_id_kind_t cid_steam;
 
 	authum_logger_sink_t logging_sinks;
+	/** File layout when the file bit is set — Authum `full` / `session`. */
+	authum_logger_file_split_t logging_split;
 
 	authum_char_t rej_msg_unknown[128];
 	authum_char_t rej_msg_nosteam47[128];

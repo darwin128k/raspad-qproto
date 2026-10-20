@@ -1,5 +1,7 @@
 #include <qproto/logger.h>
 
+#include <qproto/config.h>
+
 #include <authum/host.h>
 #include <authum/path.h>
 
@@ -16,16 +18,17 @@ qproto_logger_start(const authum_host_t *host, authum_logger_sink_t sinks)
 	if ((sinks & authum_logger_sink_file) == 0u)
 		return;
 
-	if (!authum_path_join(&path, authum_host_env_module(host), "qproto.log")) {
-		authum_logger_error(&g_qproto_logger, "qproto.log: no module dir in host env");
-		return;
-	}
-	if (authum_logger_open_file(&g_qproto_logger, authum_path_as_cstr(&path)))
-		authum_logger_info(&g_qproto_logger, "qproto.log opened: %s",
+	if (authum_logger_open_module_file(&g_qproto_logger, g_qproto_config.logging_split, &path))
+		authum_logger_info(&g_qproto_logger, "log opened (%s): %s",
+				   g_qproto_config.logging_split == authum_logger_file_split_session
+					   ? "session"
+					   : "full",
 				   authum_path_as_cstr(&path));
 	else
-		authum_logger_error(&g_qproto_logger, "qproto.log open FAILED: %s",
-				    authum_path_as_cstr(&path));
+		authum_logger_error(&g_qproto_logger, "log open FAILED (split=%s)",
+				    g_qproto_config.logging_split == authum_logger_file_split_session
+					    ? "session"
+					    : "full");
 }
 
 void

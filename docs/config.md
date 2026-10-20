@@ -53,12 +53,17 @@ See comments / examples in `qproto.cfg`. Groups:
 | Emulator toggles | `EnableRevEmu`, `EnableVellum`, … | bool |
 | Client-id policy | `cid_RevEmu`, `cid_NoSteam47`, … | i32 (enum values) |
 | Logging | `LoggingMode` | u32 bit mask → `authum_logger_sink_t` |
+| Logging | `LoggingSplit` | custom: `full` \| `session` |
 | Reject messages | `RejMsgRevEmu`, … | cstr (fixed buffers) |
 | Engine | `EngineLayout` | custom string parse |
 | Steam cid | `cid_Steam` | custom validated i32 |
 
 `LoggingMode`: `2` = file only, `4` = authum.log (host) only, `6` = both
 (default in code is file-only).
+
+`LoggingSplit` (when the file bit is set): Authum
+`authum_logger_file_split_*` — `full` = one `qproto.log` (default); `session` =
+new file under `modules/qproto/logs/` each start.
 
 ---
 
