@@ -38,14 +38,13 @@
 ## Build
 
 ```bash
-# Needs Authum headers only (sibling checkout). No HLSDK / metamod-p in this module.
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-  -DAUTHUM_SRC_DIR=../raspad-authum
+git submodule update --init --recursive
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build --target qproto
 # → build/modules/qproto/qproto.so
 ```
 
-32-bit toolchain (`-m32`) required.
+Authum comes from `lib/authum` (submodule). CMake pulls in `authum_client` via `add_subdirectory(lib/authum/client)`. No HLSDK / metamod-p in this module. 32-bit toolchain (`-m32`) required.
 
 ## Config
 

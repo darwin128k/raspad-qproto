@@ -8,22 +8,13 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-set(AUTHUM_SRC_DIR "" CACHE PATH "Checkout of raspad-authum (for include/authum)")
-if (AUTHUM_SRC_DIR STREQUAL "" OR NOT EXISTS "${AUTHUM_SRC_DIR}/include/authum/client.h")
-    foreach (_cand IN ITEMS
-            "${CMAKE_SOURCE_DIR}/../raspad-authum"
-            "H:/Projects/raspad-authum"
-            "/mnt/h/Projects/raspad-authum")
-        if (EXISTS "${_cand}/include/authum/client.h")
-            set(AUTHUM_SRC_DIR "${_cand}" CACHE PATH "Checkout of raspad-authum" FORCE)
-            break()
-        endif ()
-    endforeach ()
+set(AUTHUM_DIR "${CMAKE_SOURCE_DIR}/lib/authum")
+if (NOT EXISTS "${AUTHUM_DIR}/client/CMakeLists.txt")
+    message(FATAL_ERROR
+            "lib/authum missing — run: git submodule update --init --recursive lib/authum")
 endif ()
-if (NOT EXISTS "${AUTHUM_SRC_DIR}/include/authum/client.h")
-    message(FATAL_ERROR "AUTHUM_SRC_DIR not found (need include/authum/client.h)")
-endif ()
-message(STATUS "qproto: Authum headers from ${AUTHUM_SRC_DIR}")
+
+add_subdirectory(lib/authum/client)
 
 add_library(qproto MODULE
         src/authum/info.c
@@ -49,7 +40,6 @@ set_target_properties(qproto PROPERTIES
 )
 
 target_include_directories(qproto PRIVATE
-        "${AUTHUM_SRC_DIR}/include"
         "${CMAKE_SOURCE_DIR}/include"
         "${CMAKE_SOURCE_DIR}/src/authum"
 )
@@ -71,7 +61,7 @@ if (NOT MSVC)
     )
 endif ()
 
-target_link_libraries(qproto PRIVATE dl m)
+target_link_libraries(qproto PRIVATE authum_client dl m)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
     if (CMAKE_STRIP)
