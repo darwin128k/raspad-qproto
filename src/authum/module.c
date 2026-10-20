@@ -1,4 +1,4 @@
-#include <bridge.h>
+#include <qproto/bridge.h>
 
 #include <authum/client.h>
 

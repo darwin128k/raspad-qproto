@@ -1,4 +1,4 @@
-#include <qproto/client/auth_kind.h>
+#include <qproto/client/auth/kind.h>
 
 const char *
 qproto_client_auth_kind_name(qproto_client_auth_kind_t kind)

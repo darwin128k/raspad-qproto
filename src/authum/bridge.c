@@ -1,4 +1,4 @@
-#include <bridge.h>
+#include <qproto/bridge.h>
 
 #include <qproto/client/state.h>
 #include <qproto/command.h>

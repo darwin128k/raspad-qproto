@@ -1,6 +1,6 @@
 #include <qproto/command.h>
 
-#include <qproto/client/auth_kind.h>
+#include <qproto/client/auth/kind.h>
 #include <qproto/client/state.h>
 #include <qproto/event.h>
 
