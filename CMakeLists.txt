@@ -18,7 +18,7 @@ add_subdirectory(lib/authum/client)
 
 # Engine-independent logic, shared by the module and the tests.
 add_library(qproto_core STATIC
-        src/qproto/client/auth_kind.c
+        src/qproto/client/auth/kind.c
         src/qproto/client/state.c
         src/qproto/client/long_authid.c
         src/qproto/command.c
@@ -53,7 +53,6 @@ set_target_properties(qproto PROPERTIES
 
 target_include_directories(qproto PRIVATE
         "${CMAKE_SOURCE_DIR}/include"
-        "${CMAKE_SOURCE_DIR}/src/authum"
 )
 
 target_compile_definitions(qproto PRIVATE linux LINUX)

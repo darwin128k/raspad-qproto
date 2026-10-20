@@ -29,9 +29,9 @@
 
 #include <qproto/hook.h>
 #include <qproto/authorizers.h>
+#include <qproto/client/auth/kind.h>
 #include <qproto/logger.h>
 #include <qproto/config.h>
-#include <qproto/client/auth_kind.h>
 #include <qproto/client/state.h>
 #include <qproto/engine.h>
 
@@ -176,7 +176,7 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
 	int result;
 	uint8_t *base;
 	uint32_t client_ip;
-	authdata_t authdata;
+	qproto_authdata_t authdata;
 	qproto_client_auth_kind_t kind;
 	qproto_client_id_kind_t cid;
 	int auth_id_type;

@@ -87,7 +87,7 @@ time (UTC). The raw key is never printed.
 | `src/qproto/events.c` | Binds it on `authum.client.connect`, clears on `disconnect`, answers queries, publishes `authorized` |
 | `src/qproto/client/state.c` | Client table (allocated in qproto's Authum sandbox — nothing to free on stop) |
 | `src/qproto/client/long_authid.c` | `long_authid` via Authum crypto |
-| `src/qproto/client/auth_kind.c` | Protocol display names |
+| `src/qproto/client/auth/kind.c` | Protocol display names |
 | `src/qproto/command.c` | `authum qproto info` |
 
 Tests: `tests/client.c` (registry binding / lookup, long authid, `info`

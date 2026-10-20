@@ -32,7 +32,7 @@ enum {
 static const char *g_revemu_crypt_key = "_YOU_SERIOUSLY_NEED_TO_GET_LAID_";
 
 authum_u32_t
-rev_hash(const authum_char_t *str, authum_i32_t n)
+qproto_rev_hash(const authum_char_t *str, authum_i32_t n)
 {
 	authum_u32_t hash = 0x4E67C6A7u;
 	authum_i32_t cc;
@@ -44,8 +44,8 @@ rev_hash(const authum_char_t *str, authum_i32_t n)
 	return hash;
 }
 
-void
-qproto_revemu_finish_authorization(authdata_t *authdata, const authum_char_t *auth_str,
+static void
+revemu_finish_authorization(qproto_authdata_t *authdata, const authum_char_t *auth_str,
 			    authum_usize_t auth_key_max_len, authum_bool_t strip_special_chars)
 {
 	authum_u32_t volume_id;
@@ -73,7 +73,7 @@ qproto_revemu_finish_authorization(authdata_t *authdata, const authum_char_t *au
 		memcpy(authdata->auth_key, auth_str, authdata->auth_key_len);
 		authdata->auth_key[authdata->auth_key_len] = '\0';
 
-		authdata->steam_id = rev_hash(authdata->auth_key, -1) << 1;
+		authdata->steam_id = qproto_rev_hash(authdata->auth_key, -1) << 1;
 	} else {
 		authdata->steam_id = QPROTO_STEAM_ID_PENDING;
 		authdata->auth_key_kind = qproto_auth_key_kind_other;
@@ -119,8 +119,8 @@ typedef struct rev_ticket {
  * Expanded from the former C++ template RevEmu2009to2013Authorize — two concrete
  * static functions for the two ticket layouts (RevEmu2013 vs SC2009).
  */
-int
-qproto_revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, authdata_t *authdata,
+static int
+revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, qproto_authdata_t *authdata,
 			     authum_bool_t strip_special_chars)
 {
 	enum { VERSION = 0x53 };
@@ -172,19 +172,19 @@ qproto_revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, authdata
 	if (memcmp(digest, ticket->digest, REVEMU_SHA256_LEN) != 0)
 		return 0;
 
-	hash = rev_hash(decrypted_auth_data, -1);
+	hash = qproto_rev_hash(decrypted_auth_data, -1);
 	accid = mini_steam_id_get_account_id(&ticket->steam_id);
 
 	if (hash != ticket->hash || (uint32_t)(hash << 1) != accid)
 		return 0;
 
-	qproto_revemu_finish_authorization(authdata, decrypted_auth_data,
+	revemu_finish_authorization(authdata, decrypted_auth_data,
 				    (authum_usize_t)(sizeof decrypted_auth_data - 1u), strip_special_chars);
 	return 1;
 }
 
-int
-qproto_sc2009_ticket_authorize(const sc2009_ticket_t *ticket, authdata_t *authdata,
+static int
+sc2009_ticket_authorize(const sc2009_ticket_t *ticket, qproto_authdata_t *authdata,
 			authum_bool_t strip_special_chars)
 {
 	enum { VERSION = 0x53 };
@@ -236,42 +236,42 @@ qproto_sc2009_ticket_authorize(const sc2009_ticket_t *ticket, authdata_t *authda
 	if (memcmp(digest, ticket->digest, REVEMU_SHA256_LEN) != 0)
 		return 0;
 
-	hash = rev_hash(decrypted_auth_data, -1);
+	hash = qproto_rev_hash(decrypted_auth_data, -1);
 	accid = mini_steam_id_get_account_id(&ticket->steam_id);
 
 	if (hash != ticket->hash || (uint32_t)(hash << 1) != accid)
 		return 0;
 
-	qproto_revemu_finish_authorization(authdata, decrypted_auth_data,
+	revemu_finish_authorization(authdata, decrypted_auth_data,
 				    (authum_usize_t)(sizeof decrypted_auth_data - 1u), strip_special_chars);
 	return 1;
 }
 
 qproto_client_auth_kind_t
-revemu_2013_authorize(authdata_t *authdata)
+qproto_revemu_2013_authorize(qproto_authdata_t *authdata)
 {
 	if (authdata->ticket_len < sizeof(revemu_2013_ticket_t))
 		return qproto_client_auth_kind_unknown;
 
 	/* RevEmu2013/SC2009 always strip special chars from HDDSN-formatted keys */
-	return qproto_revemu_2013_ticket_authorize((const revemu_2013_ticket_t *)authdata->auth_ticket, authdata,
+	return revemu_2013_ticket_authorize((const revemu_2013_ticket_t *)authdata->auth_ticket, authdata,
 					    authum_bool_true)
 		? qproto_client_auth_kind_revemu_2013 : qproto_client_auth_kind_unknown;
 }
 
 qproto_client_auth_kind_t
-steamclient_2009_authorize(authdata_t *authdata)
+qproto_steamclient_2009_authorize(qproto_authdata_t *authdata)
 {
 	if (authdata->ticket_len < sizeof(sc2009_ticket_t))
 		return qproto_client_auth_kind_unknown;
 
-	return qproto_sc2009_ticket_authorize((const sc2009_ticket_t *)authdata->auth_ticket, authdata,
+	return sc2009_ticket_authorize((const sc2009_ticket_t *)authdata->auth_ticket, authdata,
 				       authum_bool_true)
 		? qproto_client_auth_kind_steamclient_2009 : qproto_client_auth_kind_unknown;
 }
 
 qproto_client_auth_kind_t
-revemu_authorize(authdata_t *authdata)
+qproto_revemu_authorize(qproto_authdata_t *authdata)
 {
 	enum { VERSION = 0x4A };
 	rev_ticket_t *ticket;
@@ -293,7 +293,7 @@ revemu_authorize(authdata_t *authdata)
 	saved = ticket->ticket_buf[sizeof(ticket->ticket_buf) - 1];
 	ticket->ticket_buf[sizeof(ticket->ticket_buf) - 1] = '\0';
 
-	hash = rev_hash(ticket->ticket_buf, -1);
+	hash = qproto_rev_hash(ticket->ticket_buf, -1);
 	accid = mini_steam_id_get_account_id(&ticket->steam_id);
 
 	if (hash != ticket->hash || (uint32_t)(hash << 1) != accid) {
@@ -301,7 +301,7 @@ revemu_authorize(authdata_t *authdata)
 		return qproto_client_auth_kind_unknown;
 	}
 
-	qproto_revemu_finish_authorization(authdata, ticket->ticket_buf, sizeof(ticket->ticket_buf) - 1, 0);
+	revemu_finish_authorization(authdata, ticket->ticket_buf, sizeof(ticket->ticket_buf) - 1, 0);
 	return qproto_client_auth_kind_revemu;
 }
 
@@ -315,7 +315,7 @@ typedef struct old_rev_ticket {
 #pragma pack(pop)
 
 qproto_client_auth_kind_t
-old_revemu_authorize(authdata_t *authdata)
+qproto_old_revemu_authorize(qproto_authdata_t *authdata)
 {
 	const old_rev_ticket_t *ticket;
 
@@ -340,7 +340,7 @@ old_revemu_authorize(authdata_t *authdata)
 }
 
 qproto_client_auth_kind_t
-setti_authorize(authdata_t *authdata)
+qproto_setti_authorize(qproto_authdata_t *authdata)
 {
 	enum {
 		TICKET_LEN = 0x300,
@@ -365,7 +365,7 @@ setti_authorize(authdata_t *authdata)
 }
 
 qproto_client_auth_kind_t
-nosteam47_authorize(authdata_t *authdata)
+qproto_nosteam47_authorize(qproto_authdata_t *authdata)
 {
 	if (authdata->protocol != 47)
 		return qproto_client_auth_kind_unknown;
@@ -377,7 +377,7 @@ nosteam47_authorize(authdata_t *authdata)
 }
 
 qproto_client_auth_kind_t
-nosteam48_authorize(authdata_t *authdata)
+qproto_nosteam48_authorize(qproto_authdata_t *authdata)
 {
 	if (authdata->protocol != 48)
 		return qproto_client_auth_kind_unknown;
@@ -389,7 +389,7 @@ nosteam48_authorize(authdata_t *authdata)
 }
 
 qproto_client_auth_kind_t
-sxei_authorize(authdata_t *authdata)
+qproto_sxei_authorize(qproto_authdata_t *authdata)
 {
 	uint32_t sxe_id;
 
@@ -417,7 +417,7 @@ sxei_authorize(authdata_t *authdata)
 }
 
 qproto_client_auth_kind_t
-vellum_authorize(authdata_t *authdata)
+qproto_vellum_authorize(qproto_authdata_t *authdata)
 {
 	const vellum_ticket_t *ticket;
 
@@ -439,7 +439,7 @@ vellum_authorize(authdata_t *authdata)
 }
 
 qproto_client_auth_kind_t
-qproto_authorize_client(authdata_t *authdata, authum_bool_t sc2009_rev_compat,
+qproto_authorize_client(qproto_authdata_t *authdata, authum_bool_t sc2009_rev_compat,
 			authum_bool_t force_auth_version_2018_plus)
 {
 	qproto_client_auth_kind_t r;
@@ -451,17 +451,17 @@ qproto_authorize_client(authdata_t *authdata, authum_bool_t sc2009_rev_compat,
 	 * Order matches classic authorizer registration: userinfo-based checks first,
 	 * then ticket formats from most to least specific, protocol-only catch-alls last.
 	 */
-	if ((r = sxei_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
-	if ((r = setti_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if ((r = qproto_sxei_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if ((r = qproto_setti_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
 
-	if (g_qproto_config.enable_vellum && (r = vellum_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
-	if (g_qproto_config.enable_revemu && (r = revemu_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
-	if (g_qproto_config.enable_revemu_2013 && (r = revemu_2013_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
-	if (g_qproto_config.enable_sc2009 && (r = steamclient_2009_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
-	if (g_qproto_config.enable_old_revemu && (r = old_revemu_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if (g_qproto_config.enable_vellum && (r = qproto_vellum_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if (g_qproto_config.enable_revemu && (r = qproto_revemu_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if (g_qproto_config.enable_revemu_2013 && (r = qproto_revemu_2013_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if (g_qproto_config.enable_sc2009 && (r = qproto_steamclient_2009_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if (g_qproto_config.enable_old_revemu && (r = qproto_old_revemu_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
 
-	if ((r = nosteam47_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
-	if ((r = nosteam48_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if ((r = qproto_nosteam47_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
+	if ((r = qproto_nosteam48_authorize(authdata)) != qproto_client_auth_kind_unknown) return r;
 
 	return qproto_client_auth_kind_unknown;
 }
