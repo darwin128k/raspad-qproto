@@ -10,8 +10,8 @@
 #include <qproto/shared.h>
 
 /**
- * Runtime settings loaded from `qproto.cfg` via ::authum_cfg_* getters
- * (defaults are the third argument to each get).
+ * Runtime settings. Defaults live on ::g_qproto_config (static init);
+ * `qproto.cfg` overlays via ::authum_cfg_apply_items.
  */
 struct qproto_config
 {
@@ -56,7 +56,7 @@ typedef struct qproto_config qproto_config_t;
 
 extern qproto_config_t g_qproto_config;
 
-/** Fill defaults, then overlay `qproto.cfg` through Authum cfg getters. */
+/** Overlay `qproto.cfg` onto ::g_qproto_config (defaults already set). */
 void qproto_config_load(void);
 
 #endif /* QPROTO_CONFIG_H */
