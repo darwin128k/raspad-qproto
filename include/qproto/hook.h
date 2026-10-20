@@ -7,7 +7,9 @@
  * native Steam validation fails.
  */
 
-int qproto_hook_install(void);
-void qproto_hook_remove(void);
+int
+qproto_hook_install(void);
+void
+qproto_hook_remove(void);
 
 #endif /* QPROTO_HOOK_H */

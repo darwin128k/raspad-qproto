@@ -31,17 +31,17 @@
  */
 struct qproto_client_query
 {
-	/* sizeof(qproto_client_query_t) as built by the caller. */
-	authum_usize_t size;
+    /* sizeof(qproto_client_query_t) as built by the caller. */
+    authum_usize_t size;
 
-	/* in */
-	authum_i32_t index;
-	authum_i32_t userid;
-	authum_char_t name[qproto_client_name_max];
+    /* in */
+    authum_i32_t index;
+    authum_i32_t userid;
+    authum_char_t name[qproto_client_name_max];
 
-	/* out */
-	authum_bool_t found;
-	qproto_client_info_t info;
+    /* out */
+    authum_bool_t found;
+    qproto_client_info_t info;
 };
 typedef struct qproto_client_query qproto_client_query_t;
 
