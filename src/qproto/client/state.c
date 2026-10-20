@@ -1,114 +1,117 @@
 #include <qproto/client/state.h>
 
-
-
+#include <authum/cstr.h>
 #include <authum/null.h>
 
 #include <string.h>
 
+qproto_client_info_t *g_qproto_clients;
+qproto_client_info_t g_qproto_pending;
+authum_bool_t g_qproto_pending_valid;
 
-
-static qproto_client_record_t g_pending;
-
-static authum_bool_t g_pending_valid = authum_bool_false;
-
-static qproto_client_record_t g_clients[QPROTO_MAX_PLAYERS];
-
-
-
-void
-
-qproto_client_state_set_pending(const qproto_client_record_t *rec)
-
+authum_bool_t
+qproto_client_state_start(const authum_sandbox_t *sandbox)
 {
-
-	g_pending = *rec;
-
-	g_pending_valid = authum_bool_true;
-
+	g_qproto_pending_valid = authum_bool_false;
+	g_qproto_clients = authum_sandbox_alloc(sandbox, sizeof(qproto_client_info_t) * QPROTO_MAX_PLAYERS);
+	return authum_null_eq(g_qproto_clients) ? authum_bool_false : authum_bool_true;
 }
 
-
+void
+qproto_client_state_stop(void)
+{
+	g_qproto_clients = authum_null;
+	g_qproto_pending_valid = authum_bool_false;
+}
 
 void
-
-qproto_client_state_on_connect(authum_i32_t index, authum_i32_t userid,
-
-			       const authum_char_t *auth_id_string, float connect_time)
-
+qproto_client_state_set_pending(const qproto_client_info_t *info)
 {
-
-	if (index < 0 || index >= QPROTO_MAX_PLAYERS) {
-
-		g_pending_valid = authum_bool_false;
-
+	if (authum_null_eq(info))
 		return;
-
-	}
-
-
-
-	if (g_pending_valid) {
-
-		g_clients[index] = g_pending;
-
-		g_clients[index].valid = authum_bool_true;
-
-		g_clients[index].userid = userid;
-
-		g_clients[index].connect_time = connect_time;
-
-		if (!authum_null_eq(auth_id_string)) {
-
-			strncpy(g_clients[index].auth_id_string, auth_id_string,
-
-				sizeof(g_clients[index].auth_id_string) - 1u);
-
-		}
-
-	} else {
-
-		memset(&g_clients[index], 0, sizeof(g_clients[index]));
-
-	}
-
-	g_pending_valid = authum_bool_false;
-
+	g_qproto_pending = *info;
+	g_qproto_pending_valid = authum_bool_true;
 }
-
-
 
 void
-
-qproto_client_state_on_disconnect(authum_i32_t index)
-
+qproto_client_state_drop_pending(void)
 {
-
-	if (index < 0 || index >= QPROTO_MAX_PLAYERS)
-
-		return;
-
-	memset(&g_clients[index], 0, sizeof(g_clients[index]));
-
+	g_qproto_pending_valid = authum_bool_false;
 }
 
+qproto_client_info_t *
+qproto_client_state_slot(authum_i32_t index)
+{
+	if (authum_null_eq(g_qproto_clients) || index < 1 || index > QPROTO_MAX_PLAYERS)
+		return authum_null;
+	return &g_qproto_clients[index - 1];
+}
 
+qproto_client_info_t *
+qproto_client_state_bind(const authum_event_client_t *ev)
+{
+	qproto_client_info_t *slot;
 
-const qproto_client_record_t *
+	if (authum_null_eq(ev))
+		return authum_null;
+	slot = qproto_client_state_slot(ev->index);
+	if (authum_null_eq(slot)) {
+		g_qproto_pending_valid = authum_bool_false;
+		return authum_null;
+	}
+	if (!g_qproto_pending_valid) {
+		memset(slot, 0, sizeof *slot);
+		return authum_null;
+	}
+	*slot = g_qproto_pending;
+	g_qproto_pending_valid = authum_bool_false;
+	slot->size = sizeof *slot;
+	slot->index = ev->index;
+	slot->userid = ev->userid;
+	slot->connected_at = ev->unix_time;
+	authum_cstr_copy(slot->name, sizeof slot->name, ev->name);
+	authum_cstr_copy(slot->auth_id, sizeof slot->auth_id, ev->auth_id);
+	return slot;
+}
 
+void
+qproto_client_state_clear(authum_i32_t index)
+{
+	qproto_client_info_t *slot = qproto_client_state_slot(index);
+
+	if (!authum_null_eq(slot))
+		memset(slot, 0, sizeof *slot);
+}
+
+const qproto_client_info_t *
 qproto_client_state_get(authum_i32_t index)
-
 {
+	const qproto_client_info_t *slot = qproto_client_state_slot(index);
 
-	if (index < 0 || index >= QPROTO_MAX_PLAYERS)
-
-		return authum_null;
-
-	if (!g_clients[index].valid)
-
-		return authum_null;
-
-	return &g_clients[index];
-
+	return (!authum_null_eq(slot) && slot->index != 0) ? slot : authum_null;
 }
 
+const qproto_client_info_t *
+qproto_client_state_find(const qproto_client_query_t *query)
+{
+	const qproto_client_info_t *slot;
+	authum_i32_t i;
+
+	if (authum_null_eq(query))
+		return authum_null;
+	if (query->index > 0)
+		return qproto_client_state_get(query->index);
+	for (i = 1; i <= QPROTO_MAX_PLAYERS; ++i) {
+		slot = qproto_client_state_get(i);
+		if (authum_null_eq(slot))
+			continue;
+		if (query->userid > 0) {
+			if (slot->userid == query->userid)
+				return slot;
+		} else if (query->name[0] != '\0' &&
+			   authum_cstr_eq(slot->name, query->name, authum_bool_true)) {
+			return slot;
+		}
+	}
+	return authum_null;
+}

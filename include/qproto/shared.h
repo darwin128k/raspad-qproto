@@ -12,15 +12,15 @@
 #define QPROTO_MAX_AUTHKEY_LEN 128
 #define QPROTO_IPGEN_KEY 0xA95CE2B9 /* hook.c synthetic-id-by-IP */
 
-/* Internal kinds ({tag}_leaf). Public peer API uses qproto_auth_kind_* /
- * qproto_key_kind_* in qproto/api.h (mapped from these). */
+/* Public: other modules see these values in qproto_client_info_t
+ * (qproto/client/info.h). Values are frozen — append only. */
 enum qproto_auth_key_kind {
-	qproto_auth_key_kind_steam,
-	qproto_auth_key_kind_volumeid,
-	qproto_auth_key_kind_hddsn,
-	qproto_auth_key_kind_fileid,
-	qproto_auth_key_kind_sxeid,
-	qproto_auth_key_kind_other,
+	qproto_auth_key_kind_steam = 0,
+	qproto_auth_key_kind_volumeid = 1,
+	qproto_auth_key_kind_hddsn = 2,
+	qproto_auth_key_kind_fileid = 3,
+	qproto_auth_key_kind_sxeid = 4,
+	qproto_auth_key_kind_other = 5,
 	qproto_auth_key_kind_max
 };
 typedef enum qproto_auth_key_kind qproto_auth_key_kind_t;
@@ -29,19 +29,20 @@ typedef enum qproto_auth_key_kind qproto_auth_key_kind_t;
  * Classic ports also had SteamEmu / AVSMP / HLTV enum leaves — not ported:
  * dead formats, or (HLTV) a path that never reaches Steam_NotifyClientConnect.
  */
+/* The protocol a client connected with. Public, frozen values — append only. */
 enum qproto_client_auth_kind {
 	qproto_client_auth_kind_unknown = 0,
-	qproto_client_auth_kind_no_steam_47,			/* No auth data was provided by client */
-	qproto_client_auth_kind_no_steam_48,			/* No auth data was provided by client */
-	qproto_client_auth_kind_setti,				/* Setti bot */
-	qproto_client_auth_kind_steam,				/* Authorized by steam */
-	qproto_client_auth_kind_steam_pending,		/* Authorized by steam, but ID is QPROTO_STEAM_ID_PENDING */
-	qproto_client_auth_kind_old_revemu,			/* Old RevEmu (authorization by serial number of first HDD volume in the system) */
-	qproto_client_auth_kind_revemu,				/* RevEmu (authorization by serial number of first HDD in the system) */
-	qproto_client_auth_kind_steamclient_2009,	/* SteamClient (alias for revemu) (authorization by serial number of first HDD in the system) */
-	qproto_client_auth_kind_revemu_2013,			/* RevEmu (authorization by serial number of first HDD in the system) */
-	qproto_client_auth_kind_sxei,				/* Authorization by sXe Injected anticheat ID. */
-	qproto_client_auth_kind_vellum,				/* raspad-revloader steamclient (64-byte VLLM ticket) */
+	qproto_client_auth_kind_no_steam_47 = 1,		/* No auth data was provided by client */
+	qproto_client_auth_kind_no_steam_48 = 2,		/* No auth data was provided by client */
+	qproto_client_auth_kind_setti = 3,			/* Setti bot */
+	qproto_client_auth_kind_steam = 4,			/* Authorized by steam */
+	qproto_client_auth_kind_steam_pending = 5,		/* Authorized by steam, but ID is QPROTO_STEAM_ID_PENDING */
+	qproto_client_auth_kind_old_revemu = 6,		/* Old RevEmu (serial number of first HDD volume) */
+	qproto_client_auth_kind_revemu = 7,			/* RevEmu (serial number of first HDD) */
+	qproto_client_auth_kind_steamclient_2009 = 8,	/* SteamClient (alias for revemu) */
+	qproto_client_auth_kind_revemu_2013 = 9,		/* RevEmu 2013 (serial number of first HDD) */
+	qproto_client_auth_kind_sxei = 10,			/* sXe Injected anticheat ID */
+	qproto_client_auth_kind_vellum = 11,			/* raspad-revloader steamclient (64-byte VLLM ticket) */
 
 	qproto_client_auth_kind_max,
 };

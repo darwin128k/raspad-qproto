@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(qproto C)
 
-# Authum client module (ABI 0.2), pure C11. Metamod plugin build lives on branch 1.0.0 only.
+# Authum client module (ABI 0.3), pure C11. Metamod plugin build lives on branch 1.0.0 only.
 # No HLSDK / metamod-p here — engine + crypto go through Authum host facades.
 
 set(CMAKE_C_STANDARD 11)
@@ -16,6 +16,23 @@ endif ()
 
 add_subdirectory(lib/authum/client)
 
+# Engine-independent logic, shared by the module and the tests.
+add_library(qproto_core STATIC
+        src/qproto/client/auth_kind.c
+        src/qproto/client/state.c
+        src/qproto/client/long_authid.c
+        src/qproto/command.c
+        src/qproto/authorizers.c
+        src/qproto/utils.c
+)
+target_include_directories(qproto_core PUBLIC "${CMAKE_SOURCE_DIR}/include")
+target_link_libraries(qproto_core PUBLIC authum_client)
+set_target_properties(qproto_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if (NOT MSVC)
+    target_compile_options(qproto_core PRIVATE -m32 -fvisibility=hidden -Wall
+            -ffunction-sections -fdata-sections)
+endif ()
+
 add_library(qproto MODULE
         src/authum/info.c
         src/authum/module.c
@@ -23,13 +40,8 @@ add_library(qproto MODULE
         src/qproto/hook.c
         src/qproto/engine.c
         src/qproto/config.c
-        src/qproto/authorizers.c
-        src/qproto/utils.c
-        src/qproto/bans.c
-        src/qproto/client/state.c
-        src/qproto/api.c
+        src/qproto/events.c
         src/qproto/logger.c
-        src/qproto/paths.c
 )
 
 set_target_properties(qproto PROPERTIES
@@ -61,7 +73,13 @@ if (NOT MSVC)
     )
 endif ()
 
-target_link_libraries(qproto PRIVATE authum_client dl m)
+target_link_libraries(qproto PRIVATE qproto_core authum_client dl m)
+
+option(QPROTO_BUILD_TESTS "Build qproto tests (ctest)" ON)
+if (QPROTO_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
     if (CMAKE_STRIP)

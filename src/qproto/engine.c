@@ -21,8 +21,8 @@ typedef struct module_info {
 	char path[512];
 } module_info_t;
 
-static int
-find_engine_module(struct dl_phdr_info *info, size_t size, void *data)
+int
+qproto_engine_find_module(struct dl_phdr_info *info, size_t size, void *data)
 {
 	module_info_t *out = (module_info_t *)data;
 	const char *base_name;
@@ -40,8 +40,8 @@ find_engine_module(struct dl_phdr_info *info, size_t size, void *data)
 	return 1; /* stop */
 }
 
-static int
-read_all(int fd, void *buf, size_t n)
+int
+qproto_engine_read_all(int fd, void *buf, size_t n)
 {
 	uint8_t *p = (uint8_t *)buf;
 	size_t got = 0;
@@ -54,8 +54,8 @@ read_all(int fd, void *buf, size_t n)
 	return 1;
 }
 
-static void *
-resolve_from_symtab(const module_info_t *mod, const char *symbol)
+void *
+qproto_engine_resolve_from_symtab(const module_info_t *mod, const char *symbol)
 {
 	int fd;
 	Elf32_Ehdr ehdr;
@@ -75,7 +75,7 @@ resolve_from_symtab(const module_info_t *mod, const char *symbol)
 	}
 
 	memset(&ehdr, 0, sizeof(ehdr));
-	if (!read_all(fd, &ehdr, sizeof(ehdr)) ||
+	if (!qproto_engine_read_all(fd, &ehdr, sizeof(ehdr)) ||
 	    memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0 ||
 	    ehdr.e_ident[EI_CLASS] != ELFCLASS32) {
 		close(fd);
@@ -93,7 +93,7 @@ resolve_from_symtab(const module_info_t *mod, const char *symbol)
 		close(fd);
 		return NULL;
 	}
-	if (!read_all(fd, shdrs, sizeof(Elf32_Shdr) * ehdr.e_shnum)) {
+	if (!qproto_engine_read_all(fd, shdrs, sizeof(Elf32_Shdr) * ehdr.e_shnum)) {
 		free(shdrs);
 		close(fd);
 		return NULL;
@@ -126,9 +126,9 @@ resolve_from_symtab(const module_info_t *mod, const char *symbol)
 		}
 
 		ok = lseek(fd, (off_t)symtab->sh_offset, SEEK_SET) >= 0 &&
-			read_all(fd, syms, symtab->sh_size) &&
+			qproto_engine_read_all(fd, syms, symtab->sh_size) &&
 			lseek(fd, (off_t)strtab->sh_offset, SEEK_SET) >= 0 &&
-			read_all(fd, strs, strtab->sh_size);
+			qproto_engine_read_all(fd, strs, strtab->sh_size);
 
 		if (ok) {
 			size_t si;
@@ -199,12 +199,12 @@ qproto_engine_resolve(const char *symbol, int *out_via_dynsym)
 	authum_logger_info(&g_qproto_logger, "engine resolve: dlsym(%s) missed (%s) - trying .symtab", symbol, err ? err : "nil");
 
 	memset(&mod, 0, sizeof(mod));
-	dl_iterate_phdr(find_engine_module, &mod);
+	dl_iterate_phdr(qproto_engine_find_module, &mod);
 	if (!mod.base) {
 		authum_logger_info(&g_qproto_logger, "engine resolve: dl_iterate_phdr did not find %s", g_engine_soname);
 		return NULL;
 	}
-	return resolve_from_symtab(&mod, symbol);
+	return qproto_engine_resolve_from_symtab(&mod, symbol);
 }
 
 const qproto_engine_layout_info_t *
