@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 
 #include "qproto/qproto_engine.h"
-#include "qproto/qproto_log.h"
+#include "qproto/qproto_logger.h"
 
 #include <dlfcn.h>
 #include <elf.h>
@@ -70,7 +70,7 @@ resolve_from_symtab(const module_info_t *mod, const char *symbol)
 
 	fd = open(mod->path, O_RDONLY);
 	if (fd < 0) {
-		qproto_log("engine resolve: open(%s) failed", mod->path);
+		authum_logger_info(&g_qproto_logger, "engine resolve: open(%s) failed", mod->path);
 		return NULL;
 	}
 
@@ -79,7 +79,7 @@ resolve_from_symtab(const module_info_t *mod, const char *symbol)
 	    memcmp(ehdr.e_ident, ELFMAG, SELFMAG) != 0 ||
 	    ehdr.e_ident[EI_CLASS] != ELFCLASS32) {
 		close(fd);
-		qproto_log("engine resolve: %s is not ELF32", mod->path);
+		authum_logger_info(&g_qproto_logger, "engine resolve: %s is not ELF32", mod->path);
 		return NULL;
 	}
 
@@ -141,7 +141,7 @@ resolve_from_symtab(const module_info_t *mod, const char *symbol)
 					continue;
 				/* ET_DYN: st_value is relative to load bias (dlpi_addr). */
 				result = (void *)(mod->base + syms[si].st_value);
-				qproto_log("engine resolve: %s via .symtab @ %p (base=%p + 0x%x)",
+				authum_logger_info(&g_qproto_logger, "engine resolve: %s via .symtab @ %p (base=%p + 0x%x)",
 					symbol, result, (void *)mod->base, (unsigned)syms[si].st_value);
 				break;
 			}
@@ -156,15 +156,15 @@ resolve_from_symtab(const module_info_t *mod, const char *symbol)
 	return result;
 }
 
-static const qproto_engine_layout_info g_classic = {
-	QPROTO_LAYOUT_CLASSIC,
+static const qproto_engine_layout_info_t g_classic = {
+	qproto_engine_layout_classic,
 	0x4a90u, /* DWARF: network_userid @ 19088 */
 	0x20u,   /* netchan @ 0x1c + remote_address @ +4 */
 	"classic (8684/2018-era)"
 };
 
-static const qproto_engine_layout_info g_build10211 = {
-	QPROTO_LAYOUT_BUILD10211,
+static const qproto_engine_layout_info_t g_build10211 = {
+	qproto_engine_layout_build10211,
 	0x6200u, /* DWARF: network_userid @ 25088 */
 	0x20u,   /* netchan still @ 0x1c + remote_address @ +4 */
 	"build10211 (Oct 2024)"
@@ -183,36 +183,36 @@ qproto_engine_resolve(const char *symbol, int *out_via_dynsym)
 
 	eng = dlopen(g_engine_soname, RTLD_NOW | RTLD_NOLOAD);
 	if (!eng) {
-		qproto_log("engine resolve: dlopen(%s, RTLD_NOLOAD) failed: %s", g_engine_soname, dlerror());
+		authum_logger_info(&g_qproto_logger, "engine resolve: dlopen(%s, RTLD_NOLOAD) failed: %s", g_engine_soname, dlerror());
 		return NULL;
 	}
 
 	dlerror();
 	dyn = dlsym(eng, symbol);
 	if (dyn) {
-		qproto_log("engine resolve: %s via dlsym @ %p", symbol, dyn);
+		authum_logger_info(&g_qproto_logger, "engine resolve: %s via dlsym @ %p", symbol, dyn);
 		if (out_via_dynsym)
 			*out_via_dynsym = 1;
 		return dyn;
 	}
 	err = dlerror();
-	qproto_log("engine resolve: dlsym(%s) missed (%s) - trying .symtab", symbol, err ? err : "nil");
+	authum_logger_info(&g_qproto_logger, "engine resolve: dlsym(%s) missed (%s) - trying .symtab", symbol, err ? err : "nil");
 
 	memset(&mod, 0, sizeof(mod));
 	dl_iterate_phdr(find_engine_module, &mod);
 	if (!mod.base) {
-		qproto_log("engine resolve: dl_iterate_phdr did not find %s", g_engine_soname);
+		authum_logger_info(&g_qproto_logger, "engine resolve: dl_iterate_phdr did not find %s", g_engine_soname);
 		return NULL;
 	}
 	return resolve_from_symtab(&mod, symbol);
 }
 
-const qproto_engine_layout_info *
-qproto_engine_select_layout(enum qproto_engine_layout override_layout, int resolved_via_dynsym)
+const qproto_engine_layout_info_t *
+qproto_engine_select_layout(qproto_engine_layout_t override_layout, int resolved_via_dynsym)
 {
-	if (override_layout == QPROTO_LAYOUT_CLASSIC)
+	if (override_layout == qproto_engine_layout_classic)
 		return &g_classic;
-	if (override_layout == QPROTO_LAYOUT_BUILD10211)
+	if (override_layout == qproto_engine_layout_build10211)
 		return &g_build10211;
 
 	/* AUTO: dynsym hit ⇒ classic export style; symtab-only ⇒ 10211-style locals. */
@@ -220,11 +220,11 @@ qproto_engine_select_layout(enum qproto_engine_layout override_layout, int resol
 }
 
 const char *
-qproto_engine_layout_name(enum qproto_engine_layout layout)
+qproto_engine_layout_name(qproto_engine_layout_t layout)
 {
 	switch (layout) {
-	case QPROTO_LAYOUT_CLASSIC: return "classic";
-	case QPROTO_LAYOUT_BUILD10211: return "10211";
+	case qproto_engine_layout_classic: return "classic";
+	case qproto_engine_layout_build10211: return "10211";
 	default: return "auto";
 	}
 }

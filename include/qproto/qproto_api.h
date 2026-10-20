@@ -15,34 +15,36 @@
 
 #define QPROTO_LONG_AUTHID_LEN 16
 
-typedef enum {
-	QPROTO_AUTH_NONE = 0,
-	QPROTO_AUTH_STEAM,
-	QPROTO_AUTH_STEAM_PENDING,
-	QPROTO_AUTH_SETTI,
-	QPROTO_AUTH_NO_STEAM_47,
-	QPROTO_AUTH_NO_STEAM_48,
-	QPROTO_AUTH_OLD_REVEMU,
-	QPROTO_AUTH_REVEMU,
-	QPROTO_AUTH_SC2009,
-	QPROTO_AUTH_REVEMU_2013,
-	QPROTO_AUTH_SXEI,
-	QPROTO_AUTH_VELLUM,
-} qproto_authkind_t;
+enum qproto_auth_kind {
+	qproto_auth_kind_none = 0,
+	qproto_auth_kind_steam,
+	qproto_auth_kind_steam_pending,
+	qproto_auth_kind_setti,
+	qproto_auth_kind_no_steam_47,
+	qproto_auth_kind_no_steam_48,
+	qproto_auth_kind_old_revemu,
+	qproto_auth_kind_revemu,
+	qproto_auth_kind_sc2009,
+	qproto_auth_kind_revemu_2013,
+	qproto_auth_kind_sxei,
+	qproto_auth_kind_vellum,
+};
+typedef enum qproto_auth_kind qproto_auth_kind_t;
 
-typedef enum {
-	QPROTO_KEY_NONE = 0,
-	QPROTO_KEY_HDDSN,
-	QPROTO_KEY_VOLUMEID,
-	QPROTO_KEY_FILEID,
-	QPROTO_KEY_SXEID,
-	QPROTO_KEY_OTHER,
-} qproto_keykind_t;
+enum qproto_key_kind {
+	qproto_key_kind_none = 0,
+	qproto_key_kind_hddsn,
+	qproto_key_kind_volumeid,
+	qproto_key_kind_fileid,
+	qproto_key_kind_sxeid,
+	qproto_key_kind_other,
+};
+typedef enum qproto_key_kind qproto_key_kind_t;
 
 int qproto_api_get_version_major(void);
 int qproto_api_get_version_minor(void);
 
-qproto_authkind_t qproto_get_client_authkind(int index);
+qproto_auth_kind_t qproto_get_client_authkind(int index);
 int qproto_get_client_protocol(int index);
 int qproto_get_client_userid(int index);
 int qproto_get_client_idkind(int index);
@@ -52,7 +54,7 @@ unsigned int qproto_get_client_ip(int index);
 size_t qproto_format_ip(unsigned int ip, char *out_buf, size_t out_buf_len);
 float qproto_get_client_connect_time(int index);
 size_t qproto_get_client_authkey(int index, void *out_buf, size_t out_buf_len);
-qproto_keykind_t qproto_get_client_authkeykind(int index);
+qproto_key_kind_t qproto_get_client_authkeykind(int index);
 int qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHID_LEN]);
 
 int qproto_ban_authkey(const void *key, size_t len);

@@ -29,7 +29,6 @@ add_library(qproto MODULE
         src/authum/info.c
         src/authum/module.c
         src/authum/bridge.c
-        src/authum/host_log.c
         src/authum/host_crypto.c
         src/authum/host_engine.c
         src/authum/data_dir.c
@@ -41,7 +40,7 @@ add_library(qproto MODULE
         src/qproto/qproto_bans.c
         src/qproto/qproto_client_state.c
         src/qproto/qproto_api.c
-        src/qproto/qproto_log.c
+        src/qproto/qproto_logger.c
         src/qproto/qproto_paths.c
 )
 

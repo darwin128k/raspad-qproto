@@ -1,5 +1,5 @@
 #include "qproto/qproto_bans.h"
-#include "qproto/qproto_log.h"
+#include "qproto/qproto_logger.h"
 #include "qproto/qproto_paths.h"
 #include "qproto/qproto_shared.h"
 
@@ -75,7 +75,7 @@ rewrite_file(void)
 
 	f = fopen(g_path, "w");
 	if (!f) {
-		qproto_log("qproto_bans.cfg: failed to rewrite %s - bans kept in memory only until next restart", g_path);
+		authum_logger_info(&g_qproto_logger, "qproto_bans.cfg: failed to rewrite %s - bans kept in memory only until next restart", g_path);
 		return;
 	}
 
@@ -121,7 +121,7 @@ qproto_bans_load(void)
 
 	f = qproto_open_data_file("qproto_bans.cfg", g_path, sizeof(g_path));
 	if (!f) {
-		qproto_log("qproto_bans.cfg not found - HW-id ban list empty (new bans → %s)", g_path);
+		authum_logger_info(&g_qproto_logger, "qproto_bans.cfg not found - HW-id ban list empty (new bans → %s)", g_path);
 		return;
 	}
 
@@ -142,12 +142,12 @@ qproto_bans_load(void)
 			continue;
 
 		if (g_num_bans >= k_max_bans) {
-			qproto_log("qproto_bans.cfg: hit the %d-entry limit - remaining lines ignored", k_max_bans);
+			authum_logger_info(&g_qproto_logger, "qproto_bans.cfg: hit the %d-entry limit - remaining lines ignored", k_max_bans);
 			break;
 		}
 
 		if (!qproto_bans_parse_hex_line(p, g_bans[g_num_bans].key, &len)) {
-			qproto_log("qproto_bans.cfg:%d: '%s' is not a valid hex key - skipped", line_no, p);
+			authum_logger_info(&g_qproto_logger, "qproto_bans.cfg:%d: '%s' is not a valid hex key - skipped", line_no, p);
 			continue;
 		}
 
@@ -156,7 +156,7 @@ qproto_bans_load(void)
 	}
 	fclose(f);
 
-	qproto_log("qproto_bans.cfg loaded from %s: %d key(s)", g_path, g_num_bans);
+	authum_logger_info(&g_qproto_logger, "qproto_bans.cfg loaded from %s: %d key(s)", g_path, g_num_bans);
 }
 
 int
@@ -178,7 +178,7 @@ qproto_bans_add(const uint8_t *key, size_t len)
 	if (find_ban(key, len) >= 0)
 		return 0;
 	if (g_num_bans >= k_max_bans) {
-		qproto_log("qproto_bans.cfg: cannot ban - hit the %d-entry limit", k_max_bans);
+		authum_logger_info(&g_qproto_logger, "qproto_bans.cfg: cannot ban - hit the %d-entry limit", k_max_bans);
 		return 0;
 	}
 
@@ -196,7 +196,7 @@ qproto_bans_add(const uint8_t *key, size_t len)
 		}
 	}
 
-	qproto_log("banned raw auth key: %s (now %d total)", hex, g_num_bans);
+	authum_logger_info(&g_qproto_logger, "banned raw auth key: %s (now %d total)", hex, g_num_bans);
 	return 1;
 }
 
@@ -216,6 +216,6 @@ qproto_bans_remove(const uint8_t *key, size_t len)
 
 	rewrite_file();
 
-	qproto_log("unbanned raw auth key: %s (now %d total)", hex, g_num_bans);
+	authum_logger_info(&g_qproto_logger, "unbanned raw auth key: %s (now %d total)", hex, g_num_bans);
 	return 1;
 }

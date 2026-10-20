@@ -29,40 +29,41 @@ typedef struct authdata {
 	int idtype;			/* engine WONAuthIdType-style value (AUTH_IDTYPE_LOCAL etc.) */
 	uint32_t steam_id;
 
-	enum auth_key_kind auth_key_kind;
+	auth_key_kind_t auth_key_kind;
 	size_t auth_key_len;
 	char auth_key[MAX_AUTHKEY_LEN + 1];
 } authdata_t;
 
-/* authorize() returns CA_UNKNOWN if the ticket doesn't match this authorizer's format. */
-enum client_auth_kind revemu_authorize(authdata_t *authdata);
-enum client_auth_kind revemu_2013_authorize(authdata_t *authdata);
-enum client_auth_kind steamclient_2009_authorize(authdata_t *authdata);
-enum client_auth_kind old_revemu_authorize(authdata_t *authdata);
+/* authorize() returns client_auth_kind_unknown if the ticket doesn't match this authorizer's format. */
+client_auth_kind_t revemu_authorize(authdata_t *authdata);
+client_auth_kind_t revemu_2013_authorize(authdata_t *authdata);
+client_auth_kind_t steamclient_2009_authorize(authdata_t *authdata);
+client_auth_kind_t old_revemu_authorize(authdata_t *authdata);
 
 /*
  * Taken from classic HLDS auth: Setti/NoSteam47/NoSteam48 authorizers - none of these
  * parse an encrypted ticket, they just classify the connection context.
  */
-enum client_auth_kind setti_authorize(authdata_t *authdata);
-enum client_auth_kind nosteam47_authorize(authdata_t *authdata);
-enum client_auth_kind nosteam48_authorize(authdata_t *authdata);
+client_auth_kind_t setti_authorize(authdata_t *authdata);
+client_auth_kind_t nosteam47_authorize(authdata_t *authdata);
+client_auth_kind_t nosteam48_authorize(authdata_t *authdata);
 
 /*
  * Taken from classic HLDS auth: SXEI authorizer - identifies a client running the sXe
  * Injected anti-cheat by its hardware id, carried in the engine-protected "*HID"
  * userinfo key. Config-gated (EnableSXEI).
  */
-enum client_auth_kind sxei_authorize(authdata_t *authdata);
-enum client_auth_kind vellum_authorize(authdata_t *authdata);
+client_auth_kind_t sxei_authorize(authdata_t *authdata);
+client_auth_kind_t vellum_authorize(authdata_t *authdata);
 
 /*
  * Tries all authorizers in turn (Vellum first among tickets, then RevEmu family);
- * returns CA_UNKNOWN if none match.
+ * returns client_auth_kind_unknown if none match.
  * sc2009_rev_compat / force_auth_version_2018_plus mirror dproto.cfg's
  * SC2009_RevCompatMode and gate a stricter special-char-stripping mode.
  */
-enum client_auth_kind qproto_authorize_client(authdata_t *authdata, int sc2009_rev_compat, int force_auth_version_2018_plus);
+client_auth_kind_t qproto_authorize_client(authdata_t *authdata, int sc2009_rev_compat,
+					   int force_auth_version_2018_plus);
 
 uint32_t rev_hash(const char *str, int n);
 

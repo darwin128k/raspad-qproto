@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Authum client module** (`authum_module_api` / ABI 0.2) → `qproto.so`
-- `LoggingMode` bit `rl_host` (4) for authum.log; default remains file-only (2)
+- `LoggingMode` bit `qproto_log_mode_host` (4) for authum.log; default remains file-only (2)
 
 ### Changed
 

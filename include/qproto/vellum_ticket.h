@@ -7,7 +7,7 @@
 
 /*
  * Vellum ticket v1 — GoldSrc connect blob emitted by raspad-revloader's
- * steamclient and parsed here as CA_VELLUM. Distinct size/magic from every
+ * steamclient and parsed here as client_auth_kind_vellum. Distinct size/magic from every
  * RevEmu family (10 / 152 / 178 / 194 / 0x300) so this server can later
  * disable those and keep only the Vellum client.
  *

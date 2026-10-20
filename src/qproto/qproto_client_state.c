@@ -1,13 +1,12 @@
 #include "qproto/qproto_client_state.h"
-#include "qproto/qproto_log.h"
 #include <string.h>
 
-static qproto_client_record g_pending;
+static qproto_client_record_t g_pending;
 static int g_pending_valid;
-static qproto_client_record g_clients[MAX_PLAYERS];
+static qproto_client_record_t g_clients[MAX_PLAYERS];
 
 void
-qproto_client_state_set_pending(const qproto_client_record *rec)
+qproto_client_state_set_pending(const qproto_client_record_t *rec)
 {
 	g_pending = *rec;
 	g_pending_valid = 1;
@@ -44,7 +43,7 @@ qproto_client_state_on_disconnect(int index)
 	memset(&g_clients[index], 0, sizeof(g_clients[index]));
 }
 
-const qproto_client_record *
+const qproto_client_record_t *
 qproto_client_state_get(int index)
 {
 	if (index < 0 || index >= MAX_PLAYERS)

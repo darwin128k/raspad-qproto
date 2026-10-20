@@ -9,79 +9,79 @@
 #include <string.h>
 #include <stdio.h>
 
-static qproto_authkind_t
-map_auth_kind(enum client_auth_kind kind)
+static qproto_auth_kind_t
+map_auth_kind(client_auth_kind_t kind)
 {
 	switch (kind) {
-	case CA_STEAM: return QPROTO_AUTH_STEAM;
-	case CA_STEAM_PENDING: return QPROTO_AUTH_STEAM_PENDING;
-	case CA_SETTI: return QPROTO_AUTH_SETTI;
-	case CA_NO_STEAM_47: return QPROTO_AUTH_NO_STEAM_47;
-	case CA_NO_STEAM_48: return QPROTO_AUTH_NO_STEAM_48;
-	case CA_OLD_REVEMU: return QPROTO_AUTH_OLD_REVEMU;
-	case CA_REVEMU: return QPROTO_AUTH_REVEMU;
-	case CA_STEAMCLIENT_2009: return QPROTO_AUTH_SC2009;
-	case CA_REVEMU_2013: return QPROTO_AUTH_REVEMU_2013;
-	case CA_SXEI: return QPROTO_AUTH_SXEI;
-	case CA_VELLUM: return QPROTO_AUTH_VELLUM;
-	default: return QPROTO_AUTH_NONE;
+	case client_auth_kind_steam: return qproto_auth_kind_steam;
+	case client_auth_kind_steam_pending: return qproto_auth_kind_steam_pending;
+	case client_auth_kind_setti: return qproto_auth_kind_setti;
+	case client_auth_kind_no_steam_47: return qproto_auth_kind_no_steam_47;
+	case client_auth_kind_no_steam_48: return qproto_auth_kind_no_steam_48;
+	case client_auth_kind_old_revemu: return qproto_auth_kind_old_revemu;
+	case client_auth_kind_revemu: return qproto_auth_kind_revemu;
+	case client_auth_kind_steamclient_2009: return qproto_auth_kind_sc2009;
+	case client_auth_kind_revemu_2013: return qproto_auth_kind_revemu_2013;
+	case client_auth_kind_sxei: return qproto_auth_kind_sxei;
+	case client_auth_kind_vellum: return qproto_auth_kind_vellum;
+	default: return qproto_auth_kind_none;
 	}
 }
 
-static qproto_keykind_t
-map_key_kind(enum auth_key_kind kind)
+static qproto_key_kind_t
+map_key_kind(auth_key_kind_t kind)
 {
 	switch (kind) {
-	case AK_HDDSN: return QPROTO_KEY_HDDSN;
-	case AK_VOLUMEID: return QPROTO_KEY_VOLUMEID;
-	case AK_FILEID: return QPROTO_KEY_FILEID;
-	case AK_SXEID: return QPROTO_KEY_SXEID;
-	default: return QPROTO_KEY_OTHER;
+	case auth_key_kind_hddsn: return qproto_key_kind_hddsn;
+	case auth_key_kind_volumeid: return qproto_key_kind_volumeid;
+	case auth_key_kind_fileid: return qproto_key_kind_fileid;
+	case auth_key_kind_sxeid: return qproto_key_kind_sxeid;
+	default: return qproto_key_kind_other;
 	}
 }
 
 int qproto_api_get_version_major(void) { return QPROTO_API_VERSION_MAJOR; }
 int qproto_api_get_version_minor(void) { return QPROTO_API_VERSION_MINOR; }
 
-qproto_authkind_t
+qproto_auth_kind_t
 qproto_get_client_authkind(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
-	return rec ? map_auth_kind(rec->auth_kind) : QPROTO_AUTH_NONE;
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
+	return rec ? map_auth_kind(rec->auth_kind) : qproto_auth_kind_none;
 }
 
 int
 qproto_get_client_protocol(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	return rec ? rec->protocol : 0;
 }
 
 int
 qproto_get_client_userid(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	return rec ? rec->userid : 0;
 }
 
 int
 qproto_get_client_idkind(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
-	return rec ? (int)rec->id_kind : (int)CI_UNKNOWN;
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
+	return rec ? (int)rec->id_kind : (int)client_id_kind_unknown;
 }
 
 unsigned int
 qproto_get_client_steamid(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	return rec ? rec->steam_id : 0;
 }
 
 size_t
 qproto_get_client_authid_string(int index, char *out_buf, size_t out_buf_len)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	size_t len;
 
 	if (!rec) {
@@ -102,7 +102,7 @@ qproto_get_client_authid_string(int index, char *out_buf, size_t out_buf_len)
 unsigned int
 qproto_get_client_ip(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	return rec ? rec->ip_address : 0;
 }
 
@@ -129,14 +129,14 @@ qproto_format_ip(unsigned int ip, char *out_buf, size_t out_buf_len)
 float
 qproto_get_client_connect_time(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	return rec ? rec->connect_time : 0.0f;
 }
 
 size_t
 qproto_get_client_authkey(int index, void *out_buf, size_t out_buf_len)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	size_t n;
 
 	if (!rec || rec->auth_key_len == 0)
@@ -148,19 +148,19 @@ qproto_get_client_authkey(int index, void *out_buf, size_t out_buf_len)
 	return rec->auth_key_len;
 }
 
-qproto_keykind_t
+qproto_key_kind_t
 qproto_get_client_authkeykind(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	if (!rec || rec->auth_key_len == 0)
-		return QPROTO_KEY_NONE;
+		return qproto_key_kind_none;
 	return map_key_kind(rec->auth_key_kind);
 }
 
 int
 qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHID_LEN])
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	uint8_t buf[sizeof(uint32_t) * 2];
 	const uint8_t *data;
 	size_t len;
@@ -184,8 +184,9 @@ qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHID_LE
 	if (!crypto)
 		return 0;
 
-	if (authum_crypto_sha_hash(crypto, authum_crypto_sha_kind_256, data, len, digest,
-				   sizeof digest) != AUTHUM_CRYPTO_SHA256_DIGEST_SIZE)
+	if (authum_crypto_sha_hash(crypto, authum_crypto_sha_kind_256, (authum_ptr)(void *)data,
+				   (authum_usize_t)len, (authum_ptr)digest,
+				   (authum_usize_t)sizeof digest) != AUTHUM_CRYPTO_SHA256_DIGEST_SIZE)
 		return 0;
 	memcpy(out, digest, QPROTO_LONG_AUTHID_LEN);
 	return 1;
@@ -231,7 +232,7 @@ issue_kick(int userid, const char *reason)
 int
 qproto_ban_client(int index)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	if (!rec || rec->auth_key_len == 0)
 		return 0;
 
@@ -245,7 +246,7 @@ qproto_ban_client(int index)
 int
 qproto_kick_client(int index, const char *reason)
 {
-	const qproto_client_record *rec = qproto_client_state_get(index);
+	const qproto_client_record_t *rec = qproto_client_state_get(index);
 	if (!rec)
 		return 0;
 

@@ -1,11 +1,12 @@
 #include "host_engine.h"
 
-static const authum_engine_t *g_engine = NULL;
+static const authum_engine_t *g_engine = authum_null;
 
 void
 qproto_host_engine_bind(const authum_host_t *host)
 {
-	g_engine = (host && host->engine) ? host->engine : NULL;
+	g_engine = (!authum_null_eq(host) && !authum_null_eq(host->engine)) ? host->engine
+									    : authum_null;
 }
 
 const authum_engine_t *

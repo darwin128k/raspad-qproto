@@ -10,7 +10,7 @@ typedef struct qproto_config {
 	 * auto (default): dynsym hit ⇒ classic (8684/2018); .symtab-only ⇒ build10211.
 	 * Force with EngineLayout=classic or EngineLayout=10211 in qproto.cfg.
 	 */
-	enum qproto_engine_layout engine_layout;
+	qproto_engine_layout_t engine_layout;
 
 	/* Per-emulator on/off switches, mirroring dproto.cfg's cid_* style. */
 	int enable_revemu;		/* RevEmu >= 9.74 (152-byte "rev"-signed ticket) */
@@ -21,27 +21,27 @@ typedef struct qproto_config {
 	int enable_vellum;		/* VLLM ticket — opt-in via EnableVellum=1 in qproto.cfg */
 
 	/*
-	 * cid_* (client_id_kind, same numbering/meaning as dproto.cfg's cid_RevEmu etc.):
+	 * cid_* (client_id_kind_t, same numbering/meaning as dproto.cfg's cid_RevEmu etc.):
 	 * which id format a successfully authorized client of that emulator/auth-kind gets.
 	 */
-	enum client_id_kind cid_revemu;
-	enum client_id_kind cid_revemu_2013;
-	enum client_id_kind cid_sc2009;
-	enum client_id_kind cid_old_revemu;
-	enum client_id_kind cid_sxei;
-	enum client_id_kind cid_vellum;
+	client_id_kind_t cid_revemu;
+	client_id_kind_t cid_revemu_2013;
+	client_id_kind_t cid_sc2009;
+	client_id_kind_t cid_old_revemu;
+	client_id_kind_t cid_sxei;
+	client_id_kind_t cid_vellum;
 
-	enum client_id_kind cid_setti;
-	enum client_id_kind cid_nosteam47;
-	enum client_id_kind cid_nosteam48;
-	enum client_id_kind cid_steam_pending;
+	client_id_kind_t cid_setti;
+	client_id_kind_t cid_nosteam47;
+	client_id_kind_t cid_nosteam48;
+	client_id_kind_t cid_steam_pending;
 
-	enum client_id_kind cid_steam;
+	client_id_kind_t cid_steam;
 
-	/* LoggingMode bitmask: rl_none=0, rl_console=1, rl_logfile=2, rl_host=4. */
+	/* LoggingMode → authum_logger_sink_* (console=1, file=2, host=4). */
 	int logging_mode;
 
-	/* Messages shown to a REJECTED client, one per client_auth_kind. */
+	/* Messages shown to a REJECTED client, one per client_auth_kind_t. */
 	char rej_msg_unknown[128];
 	char rej_msg_banned[128];
 	char rej_msg_nosteam47[128];
@@ -54,9 +54,9 @@ typedef struct qproto_config {
 	char rej_msg_sxei[128];
 	char rej_msg_vellum[128];
 	char rej_msg_steam_pending[128];
-} qproto_config;
+} qproto_config_t;
 
-extern qproto_config g_qproto_config;
+extern qproto_config_t g_qproto_config;
 
 void qproto_cfg_init(void);
 void qproto_cfg_load(void);
