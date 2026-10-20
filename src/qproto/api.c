@@ -1,8 +1,8 @@
-#include "qproto/qproto_api.h"
-#include "qproto/qproto_client_state.h"
-#include "qproto/qproto_bans.h"
-#include "qproto/qproto_host.h"
-#include "qproto/qproto_shared.h"
+#include "qproto/api.h"
+#include "qproto/client_state.h"
+#include "qproto/bans.h"
+#include "qproto/host.h"
+#include "qproto/shared.h"
 #include <authum/crypto.h>
 #include <authum/engine.h>
 

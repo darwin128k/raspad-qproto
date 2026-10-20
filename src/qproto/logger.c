@@ -1,5 +1,5 @@
-#include "qproto/qproto_logger.h"
-#include "qproto/qproto_data_dir.h"
+#include "qproto/logger.h"
+#include "qproto/data_dir.h"
 
 #include <authum/engine.h>
 #include <stdio.h>

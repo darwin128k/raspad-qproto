@@ -1,7 +1,7 @@
-#include "qproto/qproto_bans.h"
-#include "qproto/qproto_logger.h"
-#include "qproto/qproto_paths.h"
-#include "qproto/qproto_shared.h"
+#include "qproto/bans.h"
+#include "qproto/logger.h"
+#include "qproto/paths.h"
+#include "qproto/shared.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -81,7 +81,7 @@ rewrite_file(void)
 
 	fprintf(f, "# Raw auth key bans (HDD serial / volume id / sXe hardware id), one hex-encoded\n");
 	fprintf(f, "# key per line. Rewritten automatically by qproto (qproto_ban_authkey/qproto_unban_authkey,\n");
-	fprintf(f, "# see qproto_api.h) - hand edits survive until the next ban/unban triggers another rewrite.\n");
+	fprintf(f, "# see qproto/api.h) - hand edits survive until the next ban/unban triggers another rewrite.\n");
 	for (i = 0; i < g_num_bans; i++) {
 		char hex[MAX_AUTHKEY_LEN * 2 + 1];
 		hex_encode(g_bans[i].key, g_bans[i].len, hex);

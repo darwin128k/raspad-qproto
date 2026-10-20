@@ -1,8 +1,8 @@
 #ifndef QPROTO_CFG_H
 #define QPROTO_CFG_H
 
-#include "qproto/qproto_shared.h"
-#include "qproto/qproto_engine.h"
+#include "qproto/shared.h"
+#include "qproto/engine.h"
 
 typedef struct qproto_config {
 	/*

@@ -30,16 +30,16 @@ add_library(qproto MODULE
         src/authum/module.c
         src/authum/bridge.c
         src/authum/data_dir.c
-        src/qproto/qproto_hook.c
-        src/qproto/qproto_engine.c
-        src/qproto/qproto_cfg.c
-        src/qproto/qproto_authorizers.c
-        src/qproto/qproto_utils.c
-        src/qproto/qproto_bans.c
-        src/qproto/qproto_client_state.c
-        src/qproto/qproto_api.c
-        src/qproto/qproto_logger.c
-        src/qproto/qproto_paths.c
+        src/qproto/hook.c
+        src/qproto/engine.c
+        src/qproto/cfg.c
+        src/qproto/authorizers.c
+        src/qproto/utils.c
+        src/qproto/bans.c
+        src/qproto/client_state.c
+        src/qproto/api.c
+        src/qproto/logger.c
+        src/qproto/paths.c
 )
 
 set_target_properties(qproto PROPERTIES

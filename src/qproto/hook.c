@@ -27,13 +27,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "qproto/qproto_hook.h"
-#include "qproto/qproto_authorizers.h"
-#include "qproto/qproto_logger.h"
-#include "qproto/qproto_cfg.h"
-#include "qproto/qproto_bans.h"
-#include "qproto/qproto_client_state.h"
-#include "qproto/qproto_engine.h"
+#include "qproto/hook.h"
+#include "qproto/authorizers.h"
+#include "qproto/logger.h"
+#include "qproto/cfg.h"
+#include "qproto/bans.h"
+#include "qproto/client_state.h"
+#include "qproto/engine.h"
 
 typedef int (*steam_notify_client_connect_fn)(void *client, char *auth_buf, int len);
 typedef char *(*cmd_argv_fn)(int);

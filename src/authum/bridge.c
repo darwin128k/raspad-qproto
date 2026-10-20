@@ -1,11 +1,11 @@
 #include "bridge.h"
 
-#include "qproto/qproto_bans.h"
-#include "qproto/qproto_cfg.h"
-#include "qproto/qproto_data_dir.h"
-#include "qproto/qproto_hook.h"
-#include "qproto/qproto_host.h"
-#include "qproto/qproto_logger.h"
+#include "qproto/bans.h"
+#include "qproto/cfg.h"
+#include "qproto/data_dir.h"
+#include "qproto/hook.h"
+#include "qproto/host.h"
+#include "qproto/logger.h"
 
 authum_host_t g_qproto_host;
 

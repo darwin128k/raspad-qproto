@@ -1,6 +1,6 @@
-#include "qproto/qproto_data_dir.h"
-#include "qproto/qproto_host.h"
-#include "qproto/qproto_paths.h"
+#include "qproto/data_dir.h"
+#include "qproto/host.h"
+#include "qproto/paths.h"
 
 #include <authum/engine.h>
 #include <stdio.h>

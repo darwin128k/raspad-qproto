@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "qproto/qproto_shared.h"
+#include "qproto/shared.h"
 
 /*
  * Taken from classic HLDS auth: authorizer sources (GPLv3), trimmed to the v1 scope

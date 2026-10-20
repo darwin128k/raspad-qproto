@@ -1,4 +1,4 @@
-#include "qproto/qproto_client_state.h"
+#include "qproto/client_state.h"
 #include <string.h>
 
 static qproto_client_record_t g_pending;

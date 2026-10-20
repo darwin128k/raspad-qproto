@@ -1,6 +1,6 @@
-#include "qproto/qproto_cfg.h"
-#include "qproto/qproto_logger.h"
-#include "qproto/qproto_paths.h"
+#include "qproto/cfg.h"
+#include "qproto/logger.h"
+#include "qproto/paths.h"
 
 #include <stdio.h>
 #include <string.h>

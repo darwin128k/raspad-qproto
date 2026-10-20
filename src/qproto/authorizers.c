@@ -1,9 +1,9 @@
-#include "qproto/qproto_authorizers.h"
-#include "qproto/qproto_utils.h"
-#include "qproto/qproto_ministeamid.h"
-#include "qproto/qproto_cfg.h"
+#include "qproto/authorizers.h"
+#include "qproto/utils.h"
+#include "qproto/ministeamid.h"
+#include "qproto/cfg.h"
 #include "qproto/vellum_ticket.h"
-#include "qproto/qproto_host.h"
+#include "qproto/host.h"
 #include <authum/crypto.h>
 #include <string.h>
 #include <stdio.h>

@@ -1,7 +1,7 @@
 #define _GNU_SOURCE
 
-#include "qproto/qproto_engine.h"
-#include "qproto/qproto_logger.h"
+#include "qproto/engine.h"
+#include "qproto/logger.h"
 
 #include <dlfcn.h>
 #include <elf.h>

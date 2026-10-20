@@ -16,7 +16,7 @@
 #define IPGEN_KEY					0xA95CE2B9 /* qproto_hook.c synthetic-id-by-IP; mirrors classic SteamByIp() */
 
 /* Internal kinds — same {tag}_leaf rule as Authum module-style.md. Public API
- * mirrors these as qproto_auth_kind_* / qproto_key_kind_* in qproto_api.h. */
+ * mirrors these as qproto_auth_kind_* / qproto_key_kind_* in qproto/api.h. */
 enum auth_key_kind {
 	auth_key_kind_steam,
 	auth_key_kind_volumeid,

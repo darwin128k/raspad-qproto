@@ -3,11 +3,11 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "qproto/qproto_shared.h"
+#include "qproto/shared.h"
 
 /*
  * Per-connected-client auth record. Populated when qproto_hook.c finishes
- * classifying a connect (native Steam or emulated). This record backs qproto_api.h.
+ * classifying a connect (native Steam or emulated). This record backs qproto/api.h.
  */
 typedef struct qproto_client_record {
 	int valid;
