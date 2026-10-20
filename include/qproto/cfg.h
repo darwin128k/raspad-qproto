@@ -21,27 +21,27 @@ typedef struct qproto_config {
 	int enable_vellum;		/* VLLM ticket — opt-in via EnableVellum=1 in qproto.cfg */
 
 	/*
-	 * cid_* (client_id_kind_t, same numbering/meaning as dproto.cfg's cid_RevEmu etc.):
+	 * cid_* (qproto_client_id_kind_t, same numbering/meaning as dproto.cfg's cid_RevEmu etc.):
 	 * which id format a successfully authorized client of that emulator/auth-kind gets.
 	 */
-	client_id_kind_t cid_revemu;
-	client_id_kind_t cid_revemu_2013;
-	client_id_kind_t cid_sc2009;
-	client_id_kind_t cid_old_revemu;
-	client_id_kind_t cid_sxei;
-	client_id_kind_t cid_vellum;
+	qproto_client_id_kind_t cid_revemu;
+	qproto_client_id_kind_t cid_revemu_2013;
+	qproto_client_id_kind_t cid_sc2009;
+	qproto_client_id_kind_t cid_old_revemu;
+	qproto_client_id_kind_t cid_sxei;
+	qproto_client_id_kind_t cid_vellum;
 
-	client_id_kind_t cid_setti;
-	client_id_kind_t cid_nosteam47;
-	client_id_kind_t cid_nosteam48;
-	client_id_kind_t cid_steam_pending;
+	qproto_client_id_kind_t cid_setti;
+	qproto_client_id_kind_t cid_nosteam47;
+	qproto_client_id_kind_t cid_nosteam48;
+	qproto_client_id_kind_t cid_steam_pending;
 
-	client_id_kind_t cid_steam;
+	qproto_client_id_kind_t cid_steam;
 
 	/* LoggingMode → authum_logger_sink_* (console=1, file=2, host=4). */
 	int logging_mode;
 
-	/* Messages shown to a REJECTED client, one per client_auth_kind_t. */
+	/* Messages shown to a REJECTED client, one per qproto_client_auth_kind_t. */
 	char rej_msg_unknown[128];
 	char rej_msg_banned[128];
 	char rej_msg_nosteam47[128];

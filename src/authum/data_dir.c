@@ -1,4 +1,4 @@
-#include "qproto/data_dir.h"
+#include "qproto/data/dir.h"
 
 #include <string.h>
 

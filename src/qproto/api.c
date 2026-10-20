@@ -1,5 +1,5 @@
 #include "qproto/api.h"
-#include "qproto/client_state.h"
+#include "qproto/client/state.h"
 #include "qproto/bans.h"
 #include "qproto/host.h"
 #include "qproto/shared.h"
@@ -10,32 +10,32 @@
 #include <stdio.h>
 
 static qproto_auth_kind_t
-map_auth_kind(client_auth_kind_t kind)
+map_auth_kind(qproto_client_auth_kind_t kind)
 {
 	switch (kind) {
-	case client_auth_kind_steam: return qproto_auth_kind_steam;
-	case client_auth_kind_steam_pending: return qproto_auth_kind_steam_pending;
-	case client_auth_kind_setti: return qproto_auth_kind_setti;
-	case client_auth_kind_no_steam_47: return qproto_auth_kind_no_steam_47;
-	case client_auth_kind_no_steam_48: return qproto_auth_kind_no_steam_48;
-	case client_auth_kind_old_revemu: return qproto_auth_kind_old_revemu;
-	case client_auth_kind_revemu: return qproto_auth_kind_revemu;
-	case client_auth_kind_steamclient_2009: return qproto_auth_kind_sc2009;
-	case client_auth_kind_revemu_2013: return qproto_auth_kind_revemu_2013;
-	case client_auth_kind_sxei: return qproto_auth_kind_sxei;
-	case client_auth_kind_vellum: return qproto_auth_kind_vellum;
+	case qproto_client_auth_kind_steam: return qproto_auth_kind_steam;
+	case qproto_client_auth_kind_steam_pending: return qproto_auth_kind_steam_pending;
+	case qproto_client_auth_kind_setti: return qproto_auth_kind_setti;
+	case qproto_client_auth_kind_no_steam_47: return qproto_auth_kind_no_steam_47;
+	case qproto_client_auth_kind_no_steam_48: return qproto_auth_kind_no_steam_48;
+	case qproto_client_auth_kind_old_revemu: return qproto_auth_kind_old_revemu;
+	case qproto_client_auth_kind_revemu: return qproto_auth_kind_revemu;
+	case qproto_client_auth_kind_steamclient_2009: return qproto_auth_kind_sc2009;
+	case qproto_client_auth_kind_revemu_2013: return qproto_auth_kind_revemu_2013;
+	case qproto_client_auth_kind_sxei: return qproto_auth_kind_sxei;
+	case qproto_client_auth_kind_vellum: return qproto_auth_kind_vellum;
 	default: return qproto_auth_kind_none;
 	}
 }
 
 static qproto_key_kind_t
-map_key_kind(auth_key_kind_t kind)
+map_key_kind(qproto_auth_key_kind_t kind)
 {
 	switch (kind) {
-	case auth_key_kind_hddsn: return qproto_key_kind_hddsn;
-	case auth_key_kind_volumeid: return qproto_key_kind_volumeid;
-	case auth_key_kind_fileid: return qproto_key_kind_fileid;
-	case auth_key_kind_sxeid: return qproto_key_kind_sxeid;
+	case qproto_auth_key_kind_hddsn: return qproto_key_kind_hddsn;
+	case qproto_auth_key_kind_volumeid: return qproto_key_kind_volumeid;
+	case qproto_auth_key_kind_fileid: return qproto_key_kind_fileid;
+	case qproto_auth_key_kind_sxeid: return qproto_key_kind_sxeid;
 	default: return qproto_key_kind_other;
 	}
 }
@@ -68,7 +68,7 @@ int
 qproto_get_client_idkind(int index)
 {
 	const qproto_client_record_t *rec = qproto_client_state_get(index);
-	return rec ? (int)rec->id_kind : (int)client_id_kind_unknown;
+	return rec ? (int)rec->id_kind : (int)qproto_client_id_kind_unknown;
 }
 
 unsigned int
@@ -161,23 +161,23 @@ int
 qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHID_LEN])
 {
 	const qproto_client_record_t *rec = qproto_client_state_get(index);
-	uint8_t buf[sizeof(uint32_t) * 2];
-	const uint8_t *data;
-	size_t len;
+	authum_byte_t buf[sizeof(authum_u32_t) * 2u];
+	const authum_byte_t *data;
+	authum_usize_t len;
 	const authum_crypto_t *crypto;
-	unsigned char digest[AUTHUM_CRYPTO_SHA256_DIGEST_SIZE];
+	authum_byte_t digest[AUTHUM_CRYPTO_SHA256_DIGEST_SIZE];
 
 	if (!rec || !out)
 		return 0;
 
-	if (rec->auth_key_len > 0) {
+	if (rec->auth_key_len > 0u) {
 		data = rec->auth_key;
 		len = rec->auth_key_len;
 	} else {
-		*(uint32_t *)buf = (uint32_t)rec->auth_kind;
-		*(uint32_t *)(buf + sizeof(uint32_t)) = rec->steam_id;
+		*(authum_u32_t *)buf = (authum_u32_t)rec->auth_kind;
+		*(authum_u32_t *)(buf + sizeof(authum_u32_t)) = rec->steam_id;
 		data = buf;
-		len = sizeof(buf);
+		len = (authum_usize_t)sizeof(buf);
 	}
 
 	crypto = g_qproto_host.crypto;
@@ -195,19 +195,19 @@ qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHID_LE
 int
 qproto_ban_authkey(const void *key, size_t len)
 {
-	return qproto_bans_add((const uint8_t *)key, len) ? 1 : 0;
+	return qproto_bans_add((const authum_byte_t *)key, (authum_usize_t)len) ? 1 : 0;
 }
 
 int
 qproto_unban_authkey(const void *key, size_t len)
 {
-	return qproto_bans_remove((const uint8_t *)key, len) ? 1 : 0;
+	return qproto_bans_remove((const authum_byte_t *)key, (authum_usize_t)len) ? 1 : 0;
 }
 
 int
 qproto_is_authkey_banned(const void *key, size_t len)
 {
-	return qproto_bans_is_banned((const uint8_t *)key, len) ? 1 : 0;
+	return qproto_bans_is_banned((const authum_byte_t *)key, (authum_usize_t)len) ? 1 : 0;
 }
 
 static void

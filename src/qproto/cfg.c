@@ -23,18 +23,18 @@ qproto_cfg_init(void)
 	g_qproto_config.enable_sxei = 1;
 	g_qproto_config.enable_vellum = 0;
 
-	g_qproto_config.cid_revemu = client_id_kind_real_steam;
-	g_qproto_config.cid_revemu_2013 = client_id_kind_real_steam;
-	g_qproto_config.cid_sc2009 = client_id_kind_real_steam;
-	g_qproto_config.cid_old_revemu = client_id_kind_real_steam;
-	g_qproto_config.cid_sxei = client_id_kind_real_steam;
-	g_qproto_config.cid_vellum = client_id_kind_real_steam;
+	g_qproto_config.cid_revemu = qproto_client_id_kind_real_steam;
+	g_qproto_config.cid_revemu_2013 = qproto_client_id_kind_real_steam;
+	g_qproto_config.cid_sc2009 = qproto_client_id_kind_real_steam;
+	g_qproto_config.cid_old_revemu = qproto_client_id_kind_real_steam;
+	g_qproto_config.cid_sxei = qproto_client_id_kind_real_steam;
+	g_qproto_config.cid_vellum = qproto_client_id_kind_real_steam;
 
-	g_qproto_config.cid_setti = client_id_kind_steam_by_ip;
-	g_qproto_config.cid_nosteam47 = client_id_kind_deprecated;
-	g_qproto_config.cid_nosteam48 = client_id_kind_deprecated;
-	g_qproto_config.cid_steam_pending = client_id_kind_steam_id_pending;
-	g_qproto_config.cid_steam = client_id_kind_real_steam;
+	g_qproto_config.cid_setti = qproto_client_id_kind_steam_by_ip;
+	g_qproto_config.cid_nosteam47 = qproto_client_id_kind_deprecated;
+	g_qproto_config.cid_nosteam48 = qproto_client_id_kind_deprecated;
+	g_qproto_config.cid_steam_pending = qproto_client_id_kind_steam_id_pending;
+	g_qproto_config.cid_steam = qproto_client_id_kind_real_steam;
 
 	g_qproto_config.logging_mode = authum_logger_sink_file;
 
@@ -144,28 +144,28 @@ qproto_cfg_load(void)
 		} else if (strcasecmp(key, "LoggingMode") == 0) {
 			g_qproto_config.logging_mode = atoi(value);
 		} else if (strcasecmp(key, "cid_RevEmu") == 0) {
-			g_qproto_config.cid_revemu = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_revemu = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_RevEmu2013") == 0) {
-			g_qproto_config.cid_revemu_2013 = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_revemu_2013 = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_SC2009") == 0) {
-			g_qproto_config.cid_sc2009 = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_sc2009 = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_OldRevEmu") == 0) {
-			g_qproto_config.cid_old_revemu = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_old_revemu = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_SXEI") == 0) {
-			g_qproto_config.cid_sxei = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_sxei = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_Vellum") == 0) {
-			g_qproto_config.cid_vellum = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_vellum = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_Steam") == 0) {
-			client_id_kind_t v = (client_id_kind_t)atoi(value);
-			g_qproto_config.cid_steam = (v == client_id_kind_steam_by_ip || v == client_id_kind_valve_by_ip) ? v : client_id_kind_real_steam;
+			qproto_client_id_kind_t v = (qproto_client_id_kind_t)atoi(value);
+			g_qproto_config.cid_steam = (v == qproto_client_id_kind_steam_by_ip || v == qproto_client_id_kind_valve_by_ip) ? v : qproto_client_id_kind_real_steam;
 		} else if (strcasecmp(key, "cid_Setti") == 0) {
-			g_qproto_config.cid_setti = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_setti = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_NoSteam47") == 0) {
-			g_qproto_config.cid_nosteam47 = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_nosteam47 = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_NoSteam48") == 0) {
-			g_qproto_config.cid_nosteam48 = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_nosteam48 = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_SteamPending") == 0) {
-			g_qproto_config.cid_steam_pending = (client_id_kind_t)atoi(value);
+			g_qproto_config.cid_steam_pending = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "RejMsgUnknown") == 0) {
 			strncpy(g_qproto_config.rej_msg_unknown, value, sizeof(g_qproto_config.rej_msg_unknown) - 1);
 		} else if (strcasecmp(key, "RejMsgBanned") == 0) {

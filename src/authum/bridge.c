@@ -2,7 +2,7 @@
 
 #include "qproto/bans.h"
 #include "qproto/cfg.h"
-#include "qproto/data_dir.h"
+#include "qproto/data/dir.h"
 #include "qproto/hook.h"
 #include "qproto/host.h"
 #include "qproto/logger.h"

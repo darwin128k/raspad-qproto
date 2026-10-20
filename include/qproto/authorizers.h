@@ -1,70 +1,57 @@
 #ifndef QPROTO_AUTHORIZERS_H
 #define QPROTO_AUTHORIZERS_H
 
-#include <stdint.h>
-#include <stddef.h>
+#include <authum/bool.h>
+#include <authum/byte.h>
+#include <authum/char.h>
+#include <authum/size.h>
+
 #include "qproto/shared.h"
 
 /*
- * Taken from classic HLDS auth: authorizer sources (GPLv3), trimmed to the v1 scope
- * (Steam + RevEmu family: RevEmu >=9.74, RevEmu2013, SC2009). No engine dependency -
- * everything here works on raw bytes handed in by the caller.
+ * Classic HLDS auth authorizers (GPLv3), trimmed: Steam + RevEmu family.
+ * Engine-free — works on raw bytes from the caller.
  */
 
-typedef struct authdata {
+struct authdata
+{
 	/* in */
-	const uint8_t *auth_ticket;
-	size_t ticket_len;
+	const authum_byte_t *auth_ticket;
+	authum_usize_t ticket_len;
 
 	/*
-	 * Context needed by the non-ticket authorizers below (HLTV/NoSteam47/NoSteam48),
-	 * from classic HLDS authdata_t. Pre-extracted by the caller (qproto_hook.c, which
-	 * has engine function pointers) rather than looked up in here, so this file stays
-	 * engine-free and unit-testable in isolation.
+	 * Context for non-ticket authorizers (NoSteam47/48, SXEI), pre-extracted
+	 * by hook.c so this file stays engine-free.
 	 */
-	int protocol;			/* negotiated client protocol (47 or 48), from Info_ValueForKey(protinfo, "prot") */
-	const char *sxei_hid_hex;	/* Info_ValueForKey(userinfo, "*HID"), or null/empty if absent */
+	authum_i32_t protocol; /* 47 or 48, from Info_ValueForKey(protinfo, "prot") */
+	const authum_char_t *sxei_hid_hex; /* "*HID", or null/empty if absent */
 
 	/* out */
-	int idtype;			/* engine WONAuthIdType-style value (AUTH_IDTYPE_LOCAL etc.) */
-	uint32_t steam_id;
+	authum_i32_t idtype; /* engine AUTH_IDTYPE_* */
+	authum_u32_t steam_id;
 
-	auth_key_kind_t auth_key_kind;
-	size_t auth_key_len;
-	char auth_key[MAX_AUTHKEY_LEN + 1];
-} authdata_t;
+	qproto_auth_key_kind_t auth_key_kind;
+	authum_usize_t auth_key_len;
+	authum_char_t auth_key[QPROTO_MAX_AUTHKEY_LEN + 1];
+};
+typedef struct authdata authdata_t;
 
-/* authorize() returns client_auth_kind_unknown if the ticket doesn't match this authorizer's format. */
-client_auth_kind_t revemu_authorize(authdata_t *authdata);
-client_auth_kind_t revemu_2013_authorize(authdata_t *authdata);
-client_auth_kind_t steamclient_2009_authorize(authdata_t *authdata);
-client_auth_kind_t old_revemu_authorize(authdata_t *authdata);
+/* authorize() returns qproto_client_auth_kind_unknown if the ticket doesn't match. */
+qproto_client_auth_kind_t revemu_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t revemu_2013_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t steamclient_2009_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t old_revemu_authorize(authdata_t *authdata);
 
-/*
- * Taken from classic HLDS auth: Setti/NoSteam47/NoSteam48 authorizers - none of these
- * parse an encrypted ticket, they just classify the connection context.
- */
-client_auth_kind_t setti_authorize(authdata_t *authdata);
-client_auth_kind_t nosteam47_authorize(authdata_t *authdata);
-client_auth_kind_t nosteam48_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t setti_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t nosteam47_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t nosteam48_authorize(authdata_t *authdata);
 
-/*
- * Taken from classic HLDS auth: SXEI authorizer - identifies a client running the sXe
- * Injected anti-cheat by its hardware id, carried in the engine-protected "*HID"
- * userinfo key. Config-gated (EnableSXEI).
- */
-client_auth_kind_t sxei_authorize(authdata_t *authdata);
-client_auth_kind_t vellum_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t sxei_authorize(authdata_t *authdata);
+qproto_client_auth_kind_t vellum_authorize(authdata_t *authdata);
 
-/*
- * Tries all authorizers in turn (Vellum first among tickets, then RevEmu family);
- * returns client_auth_kind_unknown if none match.
- * sc2009_rev_compat / force_auth_version_2018_plus mirror dproto.cfg's
- * SC2009_RevCompatMode and gate a stricter special-char-stripping mode.
- */
-client_auth_kind_t qproto_authorize_client(authdata_t *authdata, int sc2009_rev_compat,
-					   int force_auth_version_2018_plus);
+qproto_client_auth_kind_t qproto_authorize_client(authdata_t *authdata, authum_bool_t sc2009_rev_compat,
+					   authum_bool_t force_auth_version_2018_plus);
 
-uint32_t rev_hash(const char *str, int n);
+authum_u32_t rev_hash(const authum_char_t *str, authum_i32_t n);
 
 #endif /* QPROTO_AUTHORIZERS_H */
