@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Install i386 toolchain
         run: |
           sudo dpkg --add-architecture i386
@@ -17,14 +19,9 @@ jobs:
           sudo apt-get install -y \
             g++-multilib ninja-build cmake \
             libstdc++-12-dev:i386
-      - name: Authum headers
-        run: |
-          git clone --depth 1 --branch 2.0.0 \
-            https://github.com/darwin128k/raspad-authum.git ../raspad-authum
       - name: Configure & build
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
-            -DAUTHUM_SRC_DIR=$PWD/../raspad-authum
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target qproto
       - name: Upload artifact
         uses: actions/upload-artifact@v4
