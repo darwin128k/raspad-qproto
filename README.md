@@ -48,7 +48,23 @@ Authum comes from `lib/authum` (submodule). CMake pulls in `authum_client` via `
 
 ## Config
 
-See `qproto.cfg`. `LoggingMode`: `2` = file only, `4` = authum.log only, `6` = both.
+Defaults live on `g_qproto_config`; `qproto.cfg` overlays them at start.
+
+- Operator keys / sample file: [`qproto.cfg`](qproto.cfg)
+- How load works, custom keys (`EngineLayout`, `cid_Steam`), extending settings:
+  **[docs/config.md](docs/config.md)**
+- Authum cfg API (any module): [`lib/authum/docs/cfg.md`](lib/authum/docs/cfg.md)
+
+`LoggingMode`: `2` = file only, `4` = authum.log only, `6` = both.
+
+## Docs
+
+| Doc | Topic |
+|-----|--------|
+| [docs/config.md](docs/config.md) | qproto.cfg load, table vs custom keys |
+| [lib/authum/docs/cfg.md](lib/authum/docs/cfg.md) | Authum flat cfg + `authum_client` |
+| [lib/authum/docs/path.md](lib/authum/docs/path.md) | `authum_path_t` / host env |
+| [lib/authum/docs/writing-a-module.md](lib/authum/docs/writing-a-module.md) | Module ABI / host facade |
 
 ## License
 
