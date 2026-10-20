@@ -5,7 +5,7 @@
 <h1 align="center">qproto</h1>
 
 <p align="center">
-  <b>1.0.0+</b> — Authum module for classic HLDS<br>
+  <b>2.0.0</b> — Authum module for classic HLDS<br>
   dproto-style non-Steam authorization + Vellum ticket protocol
 </p>
 
@@ -13,48 +13,46 @@
   <a href="LICENSE">Apache-2.0</a> ·
   <a href="CHANGELOG.md">Changelog</a> ·
   <a href="https://github.com/darwin128k/raspad-qproto">GitHub</a> ·
-  <a href="https://github.com/darwin128k/rapad-authum">Authum host</a>
+  <a href="https://github.com/darwin128k/raspad-authum">Authum host</a>
 </p>
 
 ---
 
-## Where the code lives
+## Branches
 
-**Shipping module:** [rapad-authum](https://github.com/darwin128k/rapad-authum) → `src/modules/qproto/`  
-(Authum ABI 0.2 client: `authum_module_api`, host facade, vendored hook/cfg/crypto core).
-
-This repository keeps sample `qproto.cfg`, license/NOTICE, and release history.  
-The standalone **Metamod-P** plugin build (`qproto_i386.so` via `plugins.ini`) is **retired**.
+| Branch | Product |
+|--------|---------|
+| `1.0.0` / `master` | Metamod-P plugin `qproto_i386.so` |
+| `2.0.0` | Authum client module `qproto.so` (this line) |
 
 ## Install (Authum)
 
-1. Build / download `authum_mm.so` and `modules/qproto/qproto.so` from Authum.
-2. Drop under `cstrike/addons/authum/` (host) and `addons/authum/modules/qproto/`.
-3. List `qproto` in `modules.list`.
-4. Put `qproto.cfg` (and optional `qproto_bans.cfg`) next to the module.
-
-Load Authum from Metamod as usual; Authum loads `qproto`.
+1. Build `qproto.so` (below) or take a CI artifact.
+2. Put under `cstrike/addons/authum/modules/qproto/`:
+   - `qproto.so`
+   - `qproto.cfg`
+   - `qproto_bans.cfg` (optional)
+3. List `qproto` in `addons/authum/modules.list`.
+4. Load Authum from Metamod as usual.
 
 ## Build
 
 ```bash
-# In the Authum checkout:
-git submodule update --init --recursive
-# CI / local: clone metamod-p into lib/metamod-p if needed
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAUTHUM_BUILD_QPROTO=ON
-cmake --build build --target authum qproto_authum
+# Needs Authum headers (sibling checkout) and lib/metamod-p (HLSDK headers).
+git clone --depth 1 --branch v1.21p109 \
+  https://github.com/Bots-United/metamod-p.git lib/metamod-p
+
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DAUTHUM_SRC_DIR=../raspad-authum
+cmake --build build --target qproto
 # → build/modules/qproto/qproto.so
 ```
 
+32-bit toolchain (`-m32`) required.
+
 ## Config
 
-See `qproto.cfg` for `Enable*`, `cid_*`, `EngineLayout`, `RejMsg*`, `LoggingMode`.
-
-| `EngineLayout` | Meaning |
-| --- | --- |
-| `auto` | default — pick classic vs 10211 |
-| `classic` / `8684` | older HLDS |
-| `10211` | SteamCMD build 10211 |
+See `qproto.cfg`. `LoggingMode`: `2` = file only, `4` = authum.log only, `6` = both.
 
 ## License
 
