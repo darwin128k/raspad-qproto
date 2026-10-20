@@ -1,34 +1,29 @@
-#ifndef QPROTO_CFG_H
-#define QPROTO_CFG_H
+#ifndef QPROTO_CONFIG_H
+#define QPROTO_CONFIG_H
 
 #include <authum/bool.h>
 #include <authum/byte.h>
 #include <authum/char.h>
 #include <authum/logger/sink.h>
 
-#include "qproto/engine.h"
-#include "qproto/shared.h"
+#include <qproto/engine.h>
+#include <qproto/shared.h>
 
+/**
+ * Runtime settings loaded from `qproto.cfg` via ::authum_cfg_* getters
+ * (defaults are the third argument to each get).
+ */
 struct qproto_config
 {
-	/*
-	 * Which client_t / export layout to use when hooking engine_i486.so.
-	 * auto (default): dynsym hit ⇒ classic (8684/2018); .symtab-only ⇒ build10211.
-	 * Force with EngineLayout=classic or EngineLayout=10211 in qproto.cfg.
-	 */
 	qproto_engine_layout_t engine_layout;
 
-	/* Per-emulator on/off, mirroring dproto.cfg's cid_* style. */
-	authum_bool_t enable_revemu; /* RevEmu >= 9.74 (152-byte "rev"-signed ticket) */
-	authum_bool_t enable_revemu_2013; /* RevEmu2013 (194-byte, AES+SHA256) */
-	authum_bool_t enable_sc2009; /* SteamClient 2009 (178-byte, AES+SHA256) */
-	authum_bool_t enable_old_revemu; /* legacy 10-byte XOR ticket */
-	authum_bool_t enable_sxei; /* sXe Injected ("*HID" userinfo key) */
-	authum_bool_t enable_vellum; /* VLLM ticket — opt-in via EnableVellum=1 */
+	authum_bool_t enable_revemu;
+	authum_bool_t enable_revemu_2013;
+	authum_bool_t enable_sc2009;
+	authum_bool_t enable_old_revemu;
+	authum_bool_t enable_sxei;
+	authum_bool_t enable_vellum;
 
-	/*
-	 * cid_* (qproto_client_id_kind_t): id format after successful auth.
-	 */
 	qproto_client_id_kind_t cid_revemu;
 	qproto_client_id_kind_t cid_revemu_2013;
 	qproto_client_id_kind_t cid_sc2009;
@@ -40,13 +35,10 @@ struct qproto_config
 	qproto_client_id_kind_t cid_nosteam47;
 	qproto_client_id_kind_t cid_nosteam48;
 	qproto_client_id_kind_t cid_steam_pending;
-
 	qproto_client_id_kind_t cid_steam;
 
-	/* LoggingMode cfg integer → authum_logger_sink_* bits. */
 	authum_logger_sink_t logging_sinks;
 
-	/* Reject messages, one per qproto_client_auth_kind_t. */
 	authum_char_t rej_msg_unknown[128];
 	authum_char_t rej_msg_banned[128];
 	authum_char_t rej_msg_nosteam47[128];
@@ -64,7 +56,7 @@ typedef struct qproto_config qproto_config_t;
 
 extern qproto_config_t g_qproto_config;
 
-void qproto_cfg_init(void);
-void qproto_cfg_load(void);
+/** Fill defaults, then overlay `qproto.cfg` through Authum cfg getters. */
+void qproto_config_load(void);
 
-#endif /* QPROTO_CFG_H */
+#endif /* QPROTO_CONFIG_H */

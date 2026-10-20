@@ -1,9 +1,10 @@
-#include "qproto/bans.h"
-#include "qproto/logger.h"
-#include "qproto/paths.h"
-#include "qproto/shared.h"
+#include <qproto/bans.h>
+#include <qproto/logger.h>
+#include <qproto/paths.h>
+#include <qproto/shared.h>
 
 #include <authum/null.h>
+#include <authum/path.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -18,7 +19,7 @@ typedef struct ban_entry ban_entry_t;
 
 static ban_entry_t g_bans[k_max_bans];
 static authum_i32_t g_num_bans;
-static authum_char_t g_path[512];
+static authum_path_t g_path;
 
 static authum_i32_t
 hex_val(authum_char_t c)
@@ -77,14 +78,14 @@ rewrite_file(void)
 	FILE *f;
 	authum_i32_t i;
 
-	if (!g_path[0])
+	if (authum_path_is_empty(&g_path))
 		return;
 
-	f = fopen(g_path, "w");
+	f = fopen(authum_path_as_cstr(&g_path), "w");
 	if (authum_null_eq(f)) {
 		authum_logger_info(&g_qproto_logger,
 				   "qproto_bans.cfg: failed to rewrite %s - bans kept in memory only until next restart",
-				   g_path);
+				   authum_path_as_cstr(&g_path));
 		return;
 	}
 
@@ -127,11 +128,13 @@ qproto_bans_load(void)
 	authum_i32_t line_no = 0;
 
 	g_num_bans = 0;
+	authum_path_clear(&g_path);
 
-	f = qproto_open_data_file("qproto_bans.cfg", g_path, sizeof(g_path));
+	f = qproto_open_data_file("qproto_bans.cfg", &g_path);
 	if (authum_null_eq(f)) {
 		authum_logger_info(&g_qproto_logger,
-				   "qproto_bans.cfg not found - HW-id ban list empty (new bans → %s)", g_path);
+				   "qproto_bans.cfg not found - HW-id ban list empty (new bans → %s)",
+				   authum_path_as_cstr(&g_path));
 		return;
 	}
 
@@ -169,7 +172,8 @@ qproto_bans_load(void)
 	}
 	fclose(f);
 
-	authum_logger_info(&g_qproto_logger, "qproto_bans.cfg loaded from %s: %d key(s)", g_path, g_num_bans);
+	authum_logger_info(&g_qproto_logger, "qproto_bans.cfg loaded from %s: %d key(s)",
+			   authum_path_as_cstr(&g_path), g_num_bans);
 }
 
 authum_bool_t
@@ -202,8 +206,8 @@ qproto_bans_add(const authum_byte_t *key, authum_usize_t len)
 
 	hex_encode(key, len, hex);
 
-	if (g_path[0]) {
-		FILE *f = fopen(g_path, "a");
+	if (!authum_path_is_empty(&g_path)) {
+		FILE *f = fopen(authum_path_as_cstr(&g_path), "a");
 		if (!authum_null_eq(f)) {
 			fprintf(f, "%s\n", hex);
 			fclose(f);

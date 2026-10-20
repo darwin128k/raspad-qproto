@@ -1,9 +1,9 @@
-#include "qproto/authorizers.h"
-#include "qproto/utils.h"
-#include "qproto/mini/steamid.h"
-#include "qproto/cfg.h"
-#include "qproto/vellum/ticket.h"
-#include "qproto/host.h"
+#include <qproto/authorizers.h>
+#include <qproto/utils.h>
+#include <qproto/mini/steamid.h>
+#include <qproto/config.h>
+#include <qproto/vellum/ticket.h>
+#include <qproto/host.h>
 #include <authum/crypto.h>
 #include <authum/null.h>
 #include <string.h>
@@ -136,7 +136,7 @@ revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, authdata_t *aut
 	if (ticket->version != VERSION || ticket->rev_signature != REVEMU_SIGNATURE || ticket->signature2 != REVEMU_SIGNATURE2)
 		return 0;
 
-	crypto = g_qproto_host.crypto;
+	crypto = authum_host_crypto(&g_qproto_host);
 	if (authum_null_eq(crypto))
 		return 0;
 
@@ -200,7 +200,7 @@ sc2009_ticket_authorize(const sc2009_ticket_t *ticket, authdata_t *authdata,
 	if (ticket->version != VERSION || ticket->rev_signature != REVEMU_SIGNATURE || ticket->signature2 != REVEMU_SIGNATURE2)
 		return 0;
 
-	crypto = g_qproto_host.crypto;
+	crypto = authum_host_crypto(&g_qproto_host);
 	if (authum_null_eq(crypto))
 		return 0;
 

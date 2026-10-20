@@ -1,50 +1,69 @@
-#include "qproto/data/dir.h"
-#include "qproto/host.h"
-#include "qproto/paths.h"
+#include <qproto/host.h>
+#include <qproto/paths.h>
 
-#include <authum/engine.h>
+#include <authum/env.h>
+#include <authum/host.h>
+#include <authum/null.h>
+#include <authum/path.h>
+
 #include <stdio.h>
-#include <string.h>
+
+static authum_bool_t
+qproto_try_open(const authum_path_t *dir, const authum_char_t *name, authum_path_t *out_path,
+		FILE **out_file)
+{
+	FILE *f;
+
+	if (authum_null_eq(dir) || authum_path_is_empty(dir))
+		return authum_bool_false;
+	if (!authum_path_join(out_path, dir, name))
+		return authum_bool_false;
+	f = fopen(authum_path_as_cstr(out_path), "r");
+	if (authum_null_eq(f))
+		return authum_bool_false;
+	*out_file = f;
+	return authum_bool_true;
+}
 
 FILE *
-qproto_open_data_file(const char *name, char *out_path, size_t out_path_len)
+qproto_open_data_file(const authum_char_t *name, authum_path_t *out_path)
 {
-	const char *mod_dir;
-	char game_dir[256];
-	static const char *patterns[] = {
-		"%s/addons/authum/modules/qproto/%s",
-		"%s/addons/qproto/%s",
-		"%s/%s",
-		"%s/../%s",
-	};
-	size_t i;
+	authum_path_t candidate;
+	authum_path_t parent;
+	FILE *f;
+	const authum_path_t *mod;
+	const authum_path_t *game;
 
-	if (!name || !out_path || out_path_len == 0)
-		return NULL;
+	if (authum_null_eq(name) || name[0] == '\0' || authum_null_eq(out_path))
+		return authum_null;
 
-	mod_dir = qproto_get_data_dir();
-	if (mod_dir) {
-		FILE *f;
-		snprintf(out_path, out_path_len, "%s/%s", mod_dir, name);
-		f = fopen(out_path, "r");
-		if (f)
+	authum_path_clear(out_path);
+	f = authum_null;
+
+	mod = authum_host_env_module(&g_qproto_host);
+	if (qproto_try_open(mod, name, out_path, &f))
+		return f;
+
+	game = authum_host_env_game(&g_qproto_host);
+	if (!authum_null_eq(game) && !authum_path_is_empty(game)) {
+		if (authum_path_join(&candidate, game, "addons/authum/modules/qproto") &&
+		    qproto_try_open(&candidate, name, out_path, &f))
+			return f;
+		if (authum_path_join(&candidate, game, "addons/qproto") &&
+		    qproto_try_open(&candidate, name, out_path, &f))
+			return f;
+		if (qproto_try_open(game, name, out_path, &f))
+			return f;
+		if (authum_path_parent(&parent, game) && qproto_try_open(&parent, name, out_path, &f))
 			return f;
 	}
 
-	memset(game_dir, 0, sizeof(game_dir));
-	authum_engine_get_game_dir(g_qproto_host.engine, game_dir, (authum_usize_t)sizeof game_dir);
+	/* Default write target when the file is missing. */
+	if (!authum_null_eq(mod) && !authum_path_is_empty(mod))
+		(void)authum_path_join(out_path, mod, name);
+	else if (!authum_null_eq(game) && !authum_path_is_empty(game) &&
+		 authum_path_join(&candidate, game, "addons/authum/modules/qproto"))
+		(void)authum_path_join(out_path, &candidate, name);
 
-	for (i = 0; i < sizeof(patterns) / sizeof(patterns[0]); i++) {
-		FILE *f;
-		snprintf(out_path, out_path_len, patterns[i], game_dir, name);
-		f = fopen(out_path, "r");
-		if (f)
-			return f;
-	}
-
-	if (mod_dir)
-		snprintf(out_path, out_path_len, "%s/%s", mod_dir, name);
-	else
-		snprintf(out_path, out_path_len, "%s/addons/authum/modules/qproto/%s", game_dir, name);
-	return NULL;
+	return authum_null;
 }

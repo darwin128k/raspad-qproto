@@ -6,7 +6,7 @@
 #include <authum/char.h>
 #include <authum/size.h>
 
-#include "qproto/shared.h"
+#include <qproto/shared.h>
 
 /*
  * Classic HLDS auth authorizers (GPLv3), trimmed: Steam + RevEmu family.

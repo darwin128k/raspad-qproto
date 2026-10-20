@@ -6,7 +6,7 @@
 #include <authum/char.h>
 #include <authum/size.h>
 
-#include "qproto/shared.h"
+#include <qproto/shared.h>
 
 /*
  * Per-connected-client auth record. Populated when hook.c finishes classifying
