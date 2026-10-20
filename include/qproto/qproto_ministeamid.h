@@ -2,7 +2,7 @@
 
 #include <cstdint>
 
-// Minimal stand-in for Valve's CSteamID (steamclientpublic.h), which classic pulls in
+// Minimal stand-in for Valve's CSteamID (steamclientpublic.h), which full Steam SDK headers pull in
 // wholesale from the Steam SDK. We only need GetAccountID(), and per the real struct's
 // layout (public/steam/steamclientpublic.h, union SteamID_t / SteamIDComponent_t on a
 // little-endian target): a plain 64-bit value whose low 32 bits are the account ID.

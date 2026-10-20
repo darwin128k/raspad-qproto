@@ -6,6 +6,7 @@
 #include "qproto/qproto_client_state.h"
 #include "qproto/qproto_bans.h"
 #include "host_crypto.h"
+#include <authum/crypto.h>
 
 #include <cstring>
 #include <cstdio>
@@ -152,15 +153,20 @@ int qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHI
 	else {
 		// No raw key on file (native Steam, or a fixed-identity kind like Setti/
 		// NoSteam47/48) - hash authkind+steamid instead, so every connected client
-		// still gets *some* stable id. Mirrors classic's own CclassicApiImpl::GetLongAuthId.
+		// still gets *some* stable id. Mirrors classic legacy long-authid hashing.
 		*(uint32_t*)buf = (uint32_t)rec->authKind;
 		*(uint32_t*)(buf + sizeof(uint32_t)) = rec->steamId;
 		data = buf;
 		len = sizeof(buf);
 	}
 
-	unsigned char digest[32];
-	if (!qproto_sha256(data, (unsigned)len, digest))
+	const authum_crypto_t *crypto = qproto_host_crypto();
+	if (!crypto)
+		return 0;
+
+	unsigned char digest[AUTHUM_CRYPTO_SHA256_DIGEST_SIZE];
+	if (authum_crypto_sha_hash(crypto, authum_crypto_sha_kind_256, data, len, digest,
+				   sizeof digest) != AUTHUM_CRYPTO_SHA256_DIGEST_SIZE)
 		return 0;
 	memcpy(out, digest, QPROTO_LONG_AUTHID_LEN);
 	return 1;

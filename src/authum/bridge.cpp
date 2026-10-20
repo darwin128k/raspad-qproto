@@ -49,7 +49,7 @@ qproto_authum_start(authum_host_t *host)
 	qproto_host_log_bind(host);
 	qproto_host_crypto_bind(host);
 	if (!qproto_host_crypto_ready()) {
-		qproto_host_log(1, "qproto: host crypto missing (aes_ecb_decrypt_block / sha256)");
+		qproto_host_log(1, "qproto: host crypto missing (authum_host_t.crypto)");
 		return AUTHUM_FALSE;
 	}
 	if (host->module_dir && host->module_dir[0])

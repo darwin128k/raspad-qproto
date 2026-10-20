@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Public API renamed to **snake_case** (`qproto_hook_install`, `qproto_log`, …)
 - Branch `2.0.0` is Authum-only; Metamod plugin stays on `1.0.0`
-- RevEmu AES-ECB + SHA-256 via Authum host (`aes_ecb_decrypt_block` / `sha256` → lh)
+- RevEmu Rijndael + SHA-256 via Authum crypto facade (`host->crypto` → lh session API)
 
 ### Removed
 

@@ -5,14 +5,15 @@
 #include "qproto/vellum_ticket.h"
 #include "qproto/precompiled.h"
 #include "host_crypto.h"
+#include <authum/crypto.h>
 #include <cstring>
 #include <cstdio>	// sscanf, SXEIAuthorize
 
-// Ported from classic's classic_authorizers.cpp (GPLv3): the RevEmu-family ticket
-// format and crypto is identical across dproto/classic/qproto (same community-derived
+// Taken from classic HLDS auth: authorizer.cpp (GPLv3): the RevEmu-family ticket
+// format and crypto is identical across dproto/qproto (same community-derived
 // wire format - confirmed independently this session by decompiling dproto's binary
 // and finding the exact same Setti magic constants at the exact same ticket offsets).
-// AES-ECB + SHA-256 go through Authum host (lh), not vendored Rijndael/sha2.
+// Rijndael + SHA go through Authum crypto facade (lh inside authum_mm).
 
 #define IDREVHEADER	(('r' << 16) + ('e' << 8) + 'v')	// little-endian "rev"
 
@@ -26,7 +27,7 @@ enum
 {
 	REVEMU_KEY_LEN = 32,
 	REVEMU_BLOCK_SIZE = 32,
-	REVEMU_SHA256_LEN = 32
+	REVEMU_SHA256_LEN = AUTHUM_CRYPTO_SHA256_DIGEST_SIZE
 };
 
 static const char* g_RevEmuCryptKey = "_YOU_SERIOUSLY_NEED_TO_GET_LAID_";
@@ -87,20 +88,33 @@ static bool RevEmu2009to2013Authorize(const ticket_t* ticket, authdata_t* authda
 	if (ticket->Version != VERSION || ticket->RevSignature != REVEMU_SIGNATURE || ticket->Signature2 != REVEMU_SIGNATURE2)
 		return false;
 
+	const authum_crypto_t *crypto = qproto_host_crypto();
+	if (!crypto)
+		return false;
+
+	authum_crypto_rijndael_t hCrypt1;
+	if (!authum_crypto_rijndael_init(crypto, &hCrypt1, g_RevEmuCryptKey, REVEMU_KEY_LEN, nullptr, 0,
+					 REVEMU_BLOCK_SIZE, authum_crypto_rijndael_mode_ecb))
+		return false;
+
 	char DecryptedAuthKey[REVEMU_KEY_LEN];
-	if (!qproto_aes_ecb_decrypt_block(g_RevEmuCryptKey, REVEMU_KEY_LEN, ticket->EncryptedKey,
-					  DecryptedAuthKey, REVEMU_BLOCK_SIZE))
+	if (!authum_crypto_rijndael_decrypt_block(crypto, &hCrypt1, ticket->EncryptedKey, DecryptedAuthKey))
+		return false;
+
+	authum_crypto_rijndael_t hCrypt2;
+	if (!authum_crypto_rijndael_init(crypto, &hCrypt2, DecryptedAuthKey, REVEMU_KEY_LEN, nullptr, 0,
+					 REVEMU_BLOCK_SIZE, authum_crypto_rijndael_mode_ecb))
 		return false;
 
 	char DecryptedAuthData[REVEMU_BLOCK_SIZE + 1];
-	if (!qproto_aes_ecb_decrypt_block(DecryptedAuthKey, REVEMU_KEY_LEN, ticket->EncryptedData,
-					  DecryptedAuthData, REVEMU_BLOCK_SIZE))
+	if (!authum_crypto_rijndael_decrypt_block(crypto, &hCrypt2, ticket->EncryptedData, DecryptedAuthData))
 		return false;
 
 	DecryptedAuthData[REVEMU_BLOCK_SIZE] = '\0';
 
 	unsigned char digest[REVEMU_SHA256_LEN];
-	if (!qproto_sha256(DecryptedAuthData, REVEMU_SHA256_LEN, digest))
+	if (authum_crypto_sha_hash(crypto, authum_crypto_sha_kind_256, DecryptedAuthData,
+				   REVEMU_SHA256_LEN, digest, sizeof digest) != REVEMU_SHA256_LEN)
 		return false;
 	if (memcmp(digest, ticket->Digest, REVEMU_SHA256_LEN) != 0)
 		return false;
@@ -158,7 +172,7 @@ client_auth_kind RevEmu2013Authorize(authdata_t* authdata)
 	if (authdata->ticketLen < sizeof(RevEmu2013Ticket_t))
 		return CA_UNKNOWN;
 
-	// per classic: RevEmu2013/SC2009 always strip special chars from HDDSN-formatted keys
+	// per classic HLDS auth: RevEmu2013/SC2009 always strip special chars from HDDSN-formatted keys
 	return RevEmu2009to2013Authorize((const RevEmu2013Ticket_t*)authdata->authTicket, authdata, true) ? CA_REVEMU_2013 : CA_UNKNOWN;
 }
 
@@ -178,7 +192,7 @@ client_auth_kind RevEmuAuthorize(authdata_t* authdata)
 		return CA_UNKNOWN;
 
 	// Ticket is const, but we need to temporarily NUL a byte to hash the string safely -
-	// same trick classic uses ("keep value for revert") to avoid needing a scratch copy.
+	// same keep-for-revert trick ("keep value for revert") to avoid needing a scratch copy.
 	RevTicket_t* ticket = (RevTicket_t*)authdata->authTicket;
 	if (ticket->Version != VERSION || ticket->RevSignature != REVEMU_SIGNATURE || ticket->Signature2 != REVEMU_SIGNATURE2)
 		return CA_UNKNOWN;
@@ -199,7 +213,7 @@ client_auth_kind RevEmuAuthorize(authdata_t* authdata)
 }
 
 // Ported from MultiEmulator's Emulators/OldRevEmu.h GenerateOldRevEmu() (an open-source
-// tool that generates test tickets specifically for dproto/classic servers, found this
+// tool that generates test tickets specifically for dproto servers, found this
 // session - confirms our other formats byte-for-byte and gives us this one, which we
 // hadn't seen documented anywhere else). No AES/SHA at all - just a magic + XOR.
 #pragma pack(push, 1)
@@ -231,7 +245,7 @@ client_auth_kind OldRevEmuAuthorize(authdata_t* authdata)
 	return CA_OLD_REVEMU;
 }
 
-// Ported verbatim from classic's CSettiAuthorizer::authorize - exact ticket length and
+// Verbatim classic HLDS auth: Setti authorizer::authorize - exact ticket length and
 // magic constants (credited there to "vityan666"). Setti is a monitoring/promotion
 // bot, not an attacker - it must be recognized and let through, not silently dropped
 // into a generic reject bucket.
@@ -258,10 +272,10 @@ client_auth_kind SettiAuthorize(authdata_t* authdata)
 	return CA_SETTI;
 }
 
-// Ported from classic's CNoSteam47Authorizer/CNoSteam48Authorizer - the catch-all for
+// Taken from classic HLDS auth: NoSteam47 authorizer/NoSteam48 authorizer - the catch-all for
 // "native Steam auth failed and no ticket format above matched", split by protocol
 // version exactly like dproto.cfg's separate cid_NoSteam47/cid_NoSteam48. Deliberately
-// does NOT look at ticket bytes at all (mirrors classic exactly) - garbage/unrecognized
+// does NOT look at ticket bytes at all (mirrors classic HLDS auth exactly) - garbage/unrecognized
 // ticket content is treated the same as no ticket, protocol is the only signal.
 client_auth_kind NoSteam47Authorize(authdata_t* authdata)
 {
@@ -285,7 +299,7 @@ client_auth_kind NoSteam48Authorize(authdata_t* authdata)
 	return CA_NO_STEAM_48;
 }
 
-// Ported from classic's CSXEIAuthorizer::authorize - trusts the engine-protected "*HID"
+// Taken from classic HLDS auth: SXEI authorizer::authorize - trusts the engine-protected "*HID"
 // userinfo key (pre-extracted by the caller, see authdata_t.sxeiHidHex) as a hex hardware
 // id from the sXe Injected anti-cheat. No ticket bytes involved at all.
 client_auth_kind SXEIAuthorize(authdata_t* authdata)
@@ -338,10 +352,9 @@ client_auth_kind qproto_authorize_client(authdata_t* authdata, bool /*sc2009RevC
 {
 	client_auth_kind r;
 
-	// Order matches classic's own authorizer registration order (classic_authorizers.cpp
-	// classic_Init_Authorizers): userinfo-based checks first, then ticket formats from
-	// most to least specific, with the protocol-only catch-alls tried last. (classic's
-	// CHLTVAuthorizer isn't ported - see qproto_shared.h's comment on CA_HLTV's removal.)
+	// Order matches classic own authorizer registration order (authorizer.cpp
+	// authorizer registration): userinfo-based checks first, then ticket formats from
+	// most to least specific, with the protocol-only catch-alls tried last. (classic // CHLTVAuthorizer isn't ported - see qproto_shared.h's comment on CA_HLTV's removal.)
 	if ((r = SXEIAuthorize(authdata)) != CA_UNKNOWN) return r;
 	if ((r = SettiAuthorize(authdata)) != CA_UNKNOWN) return r;
 

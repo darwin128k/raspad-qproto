@@ -60,11 +60,11 @@ uintptr_t g_networkUseridOffset = 0x4a90;
 uintptr_t g_remoteAddressOffset = 0x20;
 
 // Sends `message` to the still-connecting client as its own out-of-band reject packet,
-// via the real engine's SV_RejectConnection - the exact same mechanism classic uses for
-// its per-emulator dp_rejmsg_* cvars (client_auth.cpp's classic_Reject_Deprecated).
+// via the real engine's SV_RejectConnection - the exact same mechanism classic HLDS auth uses for
+// its per-emulator dp_rejmsg_* cvars (client_auth.cpp's deprecated-id rejection).
 // Confirmed via ReHLDS's own open source (sv_main.cpp) that the *native* engine still
 // unconditionally sends its own generic "STEAM validation rejected\n" right after this
-// (see qproto_hook.cpp's header comment / the conversation that led here) - classic
+// (see qproto_hook.cpp's header comment / the conversation that led here) - classic HLDS auth
 // lives with that exact same double-packet behavior in production, so we do too rather
 // than trying to suppress it (not possible from inside this hook regardless).
 // `client`'s netchan.remote_address is already populated by SV_ConnectClient before
@@ -104,7 +104,7 @@ enum { AUTH_IDTYPE_STEAM = 1, AUTH_IDTYPE_VALVE = 2, AUTH_IDTYPE_LOCAL = 3 };
 // Maps a dproto.cfg-style cid_* value (client_id_kind, qproto_shared.h) to what the
 // engine's own SV_GetIDString can actually render for us, since we write into
 // client_t::network_userid and let the *unmodified* engine format the final string
-// (see file header) rather than building "STEAM_x:y:z" ourselves the way classic
+// (see file header) rather than building "STEAM_x:y:z" ourselves the way classic plugins
 // does with full ReHLDS hook access. SV_GetIDString only branches on idtype 1/2/3 -
 // everything CI_*_STEAM-ish collapses to STEAM, everything CI_*_VALVE-ish to VALVE
 // (the LAN/PENDING sub-strings then come for free from the engine's own sv_lan and
@@ -154,10 +154,10 @@ client_id_kind CidForAuthKind(client_auth_kind kind)
 	}
 }
 
-// Mirrors classic's classic_utils.cpp IsNumericAuthKind(), trimmed to what qproto can
+// Mirrors classic utils.cpp IsNumericAuthKind(), trimmed to what qproto can
 // actually produce - Setti/NoSteam47/NoSteam48 are deliberately excluded there too
 // (they're fixed-identity kinds, not "this steamid might just be unresolved yet").
-// CA_STEAM is included, matching classic exactly - even a native Steam auth can in
+// CA_STEAM is included, matching classic HLDS auth exactly - even a native Steam auth can in
 // principle resolve to a pending id.
 bool IsNumericAuthKind(client_auth_kind kind)
 {
@@ -189,7 +189,7 @@ const char* qproto_get_authorizer_name(client_auth_kind kind)
 }
 
 // Picks which qproto.cfg RejMsg* the client actually sees when their cid_* resolves to
-// CI_DEPRECATED - matches classic's classic_Reject_Deprecated (client_auth.cpp), which
+// CI_DEPRECATED - matches classic deprecated-id rejection (client_auth.cpp), which
 // does the exact same per-authkind cvar lookup.
 const char* RejectMessageForAuthKind(client_auth_kind kind)
 {
@@ -214,8 +214,8 @@ int qproto_steam_notify_client_connect_hook(void* client, char* authBuf, int len
 
 	// protocol/sxeiHidHex come from the connect command's info-strings, not the ticket -
 	// needed below by NoSteam47Authorize/NoSteam48Authorize/SXEIAuthorize
-	// (qproto_authorizers.cpp), ported from classic's SV_CheckKeyInfo_hook ("prot" key)
-	// and CSXEIAuthorizer ("*HID" key). Extracted once, before the native call (these
+	// (qproto_authorizers.cpp), from classic HLDS auth SV_CheckKeyInfo_hook ("prot" key)
+	// and SXEI authorizer ("*HID" key). Extracted once, before the native call (these
 	// come from Cmd_Argv/Info_ValueForKey, unaffected by the Steam_NotifyClientConnect patch).
 	int protocol = 0;
 	const char* sxeiHidHex = nullptr;
@@ -252,7 +252,7 @@ int qproto_steam_notify_client_connect_hook(void* client, char* authBuf, int len
 	uint32_t clientIp = *(uint32_t*)(base + 0xc); // already filled in by SV_ConnectClient before this call runs
 
 	if (result) {
-		// Real/native Steam auth succeeded. classic still runs this through the same
+		// Real/native Steam auth succeeded. Classic auth still runs this through the same
 		// cid_* pipeline as every emulator (client_auth.cpp: authkind=CA_STEAM, then the
 		// idkind switch applies uniformly) instead of passing it through unconditionally -
 		// e.g. cid_Steam=3/4 can mask even a real Steam player behind an IP-derived id.
@@ -328,7 +328,7 @@ int qproto_steam_notify_client_connect_hook(void* client, char* authBuf, int len
 	// Reclassify to CA_STEAM_PENDING when the resolved steamId came back as
 	// STEAM_ID_LAN(0)/STEAM_ID_PENDING(1) - i.e. the client's HDD serial/volume ID
 	// wasn't available - so it gets its own cid_SteamPending rule instead of the
-	// per-emulator one. Mirrors classic's client_auth.cpp IsNumericAuthKind()+IsValidId()
+	// per-emulator one. Mirrors classic client_auth.cpp IsNumericAuthKind()+IsValidId()
 	// check; HLTV/Setti/NoSteam47/48 are excluded on purpose (see IsNumericAuthKind above).
 	if (IsNumericAuthKind(kind) && authdata.steamId <= STEAM_ID_PENDING) {
 		kind = CA_STEAM_PENDING;
@@ -344,8 +344,7 @@ int qproto_steam_notify_client_connect_hook(void* client, char* authBuf, int len
 	}
 
 	// CI_STEAM_BY_IP/CI_VALVE_BY_IP override whatever steamId the authorizer computed
-	// and derive a fresh one from the client's IP instead - mirrors classic's
-	// client_auth.cpp SteamByIp() switch on the *resolved* idkind (applies regardless
+	// and derive a fresh one from the client's IP instead - mirrors classic // client_auth.cpp SteamByIp() switch on the *resolved* idkind (applies regardless
 	// of which authorizer produced the classification).
 	uint32_t finalSteamId = authdata.steamId;
 	if (cid == CI_STEAM_BY_IP || cid == CI_VALVE_BY_IP) {

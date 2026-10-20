@@ -14,7 +14,7 @@
 // Reached via dlopen("addons/qproto/qproto_i386.so") + dlsym(...) at runtime by any
 // other plugin - the exact same low-level technique qproto itself uses to reach into
 // engine_i486.so (see qproto_hook.cpp). Deliberately plain C, not a C++ vtable
-// interface (contrast classic's IclassicApi, exposed via ReHLDS's private
+// interface (contrast a private engine auth API, exposed via ReHLDS's private
 // RegisterPluginApi() - a mechanism stock HLDS doesn't have, hence dlsym instead): a C
 // function symbol is ABI-stable across compilers/STL versions and library builds, a
 // C++ vtable is not, and dlsym can only ever hand back a plain symbol address anyway.
