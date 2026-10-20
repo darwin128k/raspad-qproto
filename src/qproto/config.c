@@ -31,6 +31,7 @@ qproto_config_t g_qproto_config = {
 	.cid_steam = qproto_client_id_kind_real_steam,
 
 	.logging_sinks = authum_logger_sink_file,
+	.logging_split = authum_logger_file_split_full,
 
 	.rej_msg_unknown = "Client authorization failed.",
 	.rej_msg_nosteam47 = "Sorry, no-steam protocol 47 clients are not allowed on this server.",
@@ -111,6 +112,7 @@ qproto_config_load(void)
 	authum_path_t path;
 	authum_cfg_t cfg;
 	authum_char_t layout[32];
+	authum_char_t split[32];
 	authum_i32_t cid_steam;
 
 	if (!authum_path_join(&path, authum_host_env_module(&g_qproto_host), "qproto.cfg") ||
@@ -124,6 +126,9 @@ qproto_config_load(void)
 
 	if (authum_cfg_apply_cstr(&cfg, "EngineLayout", layout, sizeof layout))
 		g_qproto_config.engine_layout = qproto_config_parse_engine_layout(layout);
+
+	if (authum_cfg_apply_cstr(&cfg, "LoggingSplit", split, sizeof split))
+		g_qproto_config.logging_split = authum_logger_file_split_parse(split);
 
 	cid_steam = (authum_i32_t)g_qproto_config.cid_steam;
 	if (authum_cfg_apply_i32(&cfg, "cid_Steam", &cid_steam)) {
@@ -139,7 +144,7 @@ qproto_config_load(void)
 		&g_qproto_logger,
 		"qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) "
 		"OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Vellum=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) "
-		"NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%u",
+		"NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%u LoggingSplit=%s",
 		authum_path_as_cstr(&path), (int)g_qproto_config.enable_revemu,
 		(int)g_qproto_config.cid_revemu, (int)g_qproto_config.enable_revemu_2013,
 		(int)g_qproto_config.cid_revemu_2013, (int)g_qproto_config.enable_sc2009,
@@ -149,5 +154,7 @@ qproto_config_load(void)
 		(int)g_qproto_config.cid_vellum, (int)g_qproto_config.cid_steam,
 		(int)g_qproto_config.cid_setti, (int)g_qproto_config.cid_nosteam47,
 		(int)g_qproto_config.cid_nosteam48, (int)g_qproto_config.cid_steam_pending,
-		(unsigned)g_qproto_config.logging_sinks);
+		(unsigned)g_qproto_config.logging_sinks,
+		g_qproto_config.logging_split == authum_logger_file_split_session ? "session"
+										  : "full");
 }
