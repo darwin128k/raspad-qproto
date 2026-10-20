@@ -19,7 +19,7 @@
 
 ## What it is
 
-Metamod-P plugin for **classic HLDS** (not ReHLDS — use [classic](https://github.com/rehlds/classic) there). Hooks `Steam_NotifyClientConnect`, accepts known emulator tickets, writes AuthID into `client_t::network_userid`.
+Metamod-P plugin for **classic HLDS** (not ReHLDS — use [classic HLDS auth](https://github.com/rehlds/classic HLDS auth) there). Hooks `Steam_NotifyClientConnect`, accepts known emulator tickets, writes AuthID into `client_t::network_userid`.
 
 - RevEmu / RevEmu2013 / SC2009 / OldRevEmu
 - sXe Injected (`*HID`)

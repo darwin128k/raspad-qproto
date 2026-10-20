@@ -12,7 +12,7 @@
 #define STEAM_ID_LAN				0
 #define STEAM_ID_PENDING			1
 #define MAX_AUTHKEY_LEN				128
-#define IPGEN_KEY					0xA95CE2B9 // qproto_hook.cpp's synthetic-id-by-IP derivation, mirrors classic's SteamByIp()
+#define IPGEN_KEY					0xA95CE2B9 // qproto_hook.cpp's synthetic-id-by-IP derivation, mirrors classic SteamByIp()
 
 enum auth_key_kind {
 	AK_STEAM,
@@ -24,7 +24,7 @@ enum auth_key_kind {
 	AK_MAX
 };
 
-// CA_STEAM_EMU (hCupa SteamEmu) and CA_AVSMP existed in classic's version of this enum
+// CA_STEAM_EMU (hCupa SteamEmu) and CA_AVSMP existed in classic version of this enum
 // but are deliberately not ported: both are dead formats predating RevEmu, with
 // practically no real users left, and AVSMP transmits the steamid completely
 // unencrypted (trivially spoofable) - not worth the risk surface for the two of them.
@@ -35,7 +35,7 @@ enum auth_key_kind {
 // checked before the STEAM/NA_IP branch) that calls Steam_NotifyBotConnect, not
 // Steam_NotifyClientConnect - the one function qproto hooks. An HLTV connection can
 // never reach qproto_hook.cpp at all on this server, so a cid_HLTV knob here would be
-// pure decoration that does nothing; classic can do this because it hooks SV_ConnectClient
+// pure decoration that does nothing; Full engine hooks can do this because it hooks SV_ConnectClient
 // itself via ReHLDS's private hookchains, several steps earlier than we have access to.
 enum client_auth_kind {
 	CA_UNKNOWN = 0,
@@ -77,12 +77,7 @@ enum qproto_log_mode {
 	rl_logfile = 2,
 };
 
-// classic's version of this header also has auth_version (its own 2015/2018/2024 wire-
-// format revisions), server_answer_type (source/goldsource response shaping),
-// client_id_gen_opts_t (custom STEAM_x:y:z prefix digits - only meaningful if you hook
-// SV_GetIDString and build the id string yourself, which qproto deliberately doesn't -
-// see qproto_hook.cpp's header comment), and ipv4_t/IsReservedAdr (LAN-address
-// detection for classic's own SteamByIp()/id-gen pipeline). None of these apply to
-// qproto: we hook a single pinned engine build directly rather than speaking a
-// versioned wire protocol, and MapClientIdKindToAuthIdType/CidForAuthKind
-// (qproto_hook.cpp) already cover the id-assignment logic we actually need.
+// Broader auth plugins also expose auth_version, server_answer_type,
+// client_id_gen_opts_t, and ipv4 LAN helpers. qproto does not: we hook a single
+// pinned engine build, and MapClientIdKindToAuthIdType/CidForAuthKind already
+// cover the id-assignment logic we need.

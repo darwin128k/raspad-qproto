@@ -151,7 +151,7 @@ int qproto_get_client_long_authid(int index, unsigned char out[QPROTO_LONG_AUTHI
 	else {
 		// No raw key on file (native Steam, or a fixed-identity kind like Setti/
 		// NoSteam47/48) - hash authkind+steamid instead, so every connected client
-		// still gets *some* stable id. Mirrors classic's own CclassicApiImpl::GetLongAuthId.
+		// still gets *some* stable id. Mirrors classic legacy long-authid hashing.
 		*(uint32_t*)buf = (uint32_t)rec->authKind;
 		*(uint32_t*)(buf + sizeof(uint32_t)) = rec->steamId;
 		data = buf;

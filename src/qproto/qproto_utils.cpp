@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <climits>
 
-// Ported from classic's classic_utils.cpp (GPLv3), verbatim logic.
+// Taken from classic HLDS auth: utils.cpp (GPLv3), verbatim logic.
 
 size_t strecpy(char* dest, const char* src, size_t maxlen, const char* exceptChars, char repChar)
 {
@@ -44,7 +44,7 @@ bool IsHddsnNumber(const char* authstring)
 	return strtoull(authstring, nullptr, 10) >= UINT32_MAX; // SSD
 }
 
-// See classic's comment: some NVMe SSDs report this fixed bogus serial via a
+// See classic comment: some NVMe SSDs report this fixed bogus serial via a
 // Windows API quirk (Storage Descriptor path instead of the real driver call);
 // treat it as invalid rather than minting a colliding SteamID from it.
 static const char* BadHddsnNumber = "0000_0000_0000_0000_0000_0100_0";

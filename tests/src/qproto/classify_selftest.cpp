@@ -1,8 +1,8 @@
-// Sanity check for the non-ticket classifiers ported from classic's client_auth.cpp /
-// classic_authorizers.cpp: CSettiAuthorizer (fixed 0x300-byte ticket + magic constants),
-// CSXEIAuthorizer ("*HID" userinfo key), CNoSteam47Authorizer/CNoSteam48Authorizer
+// Sanity check for the non-ticket classifiers from classic HLDS auth client_auth.cpp /
+// authorizer.cpp: Setti authorizer (fixed 0x300-byte ticket + magic constants),
+// SXEI authorizer ("*HID" userinfo key), NoSteam47 authorizer/NoSteam48 authorizer
 // (protocol-only catch-all). Also checks Qproto_Authorize_Client's dispatch order.
-// (classic also has a CHLTVAuthorizer - deliberately not ported, see qproto_shared.h's
+// (Classic plugins also have a CHLTVAuthorizer - deliberately not ported, see qproto_shared.h's
 // comment on CA_HLTV's removal for why an HLTV connection can never reach this code.)
 #include "qproto/qproto_authorizers.h"
 #include "qproto/vellum_ticket.h"
@@ -69,7 +69,7 @@ int main()
 	}
 
 	// 4) Dispatch order: a client with a valid *HID hint wins even if it also happens to
-	//    carry a Setti-shaped ticket - SXEI is checked first, exactly like classic's own
+	//    carry a Setti-shaped ticket - SXEI is checked first, exactly like classic own
 	//    authorizer registration order.
 	{
 		uint32_t ticket[0x300 / 4] = {};

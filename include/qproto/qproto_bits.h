@@ -1,7 +1,7 @@
 #pragma once
 
 // Small bit-twiddling helpers used by the ported crypto (sha2.h/Rijndael) that in
-// upstream classic come from osconf.h (rotl/rotr/rotr64) and HLSDK's mathlib.h (bswap).
+// upstream classic HLDS auth come from osconf.h (rotl/rotr/rotr64) and HLSDK's mathlib.h (bswap).
 // Neither has any engine dependency, so they're reproduced here verbatim instead of
 // pulling in ReHLDS's full SDK header tree.
 
