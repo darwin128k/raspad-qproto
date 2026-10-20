@@ -44,8 +44,8 @@ rev_hash(const authum_char_t *str, authum_i32_t n)
 	return hash;
 }
 
-static void
-revemu_finish_authorization(authdata_t *authdata, const authum_char_t *auth_str,
+void
+qproto_revemu_finish_authorization(authdata_t *authdata, const authum_char_t *auth_str,
 			    authum_usize_t auth_key_max_len, authum_bool_t strip_special_chars)
 {
 	authum_u32_t volume_id;
@@ -119,8 +119,8 @@ typedef struct rev_ticket {
  * Expanded from the former C++ template RevEmu2009to2013Authorize — two concrete
  * static functions for the two ticket layouts (RevEmu2013 vs SC2009).
  */
-static int
-revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, authdata_t *authdata,
+int
+qproto_revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, authdata_t *authdata,
 			     authum_bool_t strip_special_chars)
 {
 	enum { VERSION = 0x53 };
@@ -178,13 +178,13 @@ revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, authdata_t *aut
 	if (hash != ticket->hash || (uint32_t)(hash << 1) != accid)
 		return 0;
 
-	revemu_finish_authorization(authdata, decrypted_auth_data,
+	qproto_revemu_finish_authorization(authdata, decrypted_auth_data,
 				    (authum_usize_t)(sizeof decrypted_auth_data - 1u), strip_special_chars);
 	return 1;
 }
 
-static int
-sc2009_ticket_authorize(const sc2009_ticket_t *ticket, authdata_t *authdata,
+int
+qproto_sc2009_ticket_authorize(const sc2009_ticket_t *ticket, authdata_t *authdata,
 			authum_bool_t strip_special_chars)
 {
 	enum { VERSION = 0x53 };
@@ -242,7 +242,7 @@ sc2009_ticket_authorize(const sc2009_ticket_t *ticket, authdata_t *authdata,
 	if (hash != ticket->hash || (uint32_t)(hash << 1) != accid)
 		return 0;
 
-	revemu_finish_authorization(authdata, decrypted_auth_data,
+	qproto_revemu_finish_authorization(authdata, decrypted_auth_data,
 				    (authum_usize_t)(sizeof decrypted_auth_data - 1u), strip_special_chars);
 	return 1;
 }
@@ -254,7 +254,7 @@ revemu_2013_authorize(authdata_t *authdata)
 		return qproto_client_auth_kind_unknown;
 
 	/* RevEmu2013/SC2009 always strip special chars from HDDSN-formatted keys */
-	return revemu_2013_ticket_authorize((const revemu_2013_ticket_t *)authdata->auth_ticket, authdata,
+	return qproto_revemu_2013_ticket_authorize((const revemu_2013_ticket_t *)authdata->auth_ticket, authdata,
 					    authum_bool_true)
 		? qproto_client_auth_kind_revemu_2013 : qproto_client_auth_kind_unknown;
 }
@@ -265,7 +265,7 @@ steamclient_2009_authorize(authdata_t *authdata)
 	if (authdata->ticket_len < sizeof(sc2009_ticket_t))
 		return qproto_client_auth_kind_unknown;
 
-	return sc2009_ticket_authorize((const sc2009_ticket_t *)authdata->auth_ticket, authdata,
+	return qproto_sc2009_ticket_authorize((const sc2009_ticket_t *)authdata->auth_ticket, authdata,
 				       authum_bool_true)
 		? qproto_client_auth_kind_steamclient_2009 : qproto_client_auth_kind_unknown;
 }
@@ -301,7 +301,7 @@ revemu_authorize(authdata_t *authdata)
 		return qproto_client_auth_kind_unknown;
 	}
 
-	revemu_finish_authorization(authdata, ticket->ticket_buf, sizeof(ticket->ticket_buf) - 1, 0);
+	qproto_revemu_finish_authorization(authdata, ticket->ticket_buf, sizeof(ticket->ticket_buf) - 1, 0);
 	return qproto_client_auth_kind_revemu;
 }
 

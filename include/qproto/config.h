@@ -40,7 +40,6 @@ struct qproto_config
 	authum_logger_sink_t logging_sinks;
 
 	authum_char_t rej_msg_unknown[128];
-	authum_char_t rej_msg_banned[128];
 	authum_char_t rej_msg_nosteam47[128];
 	authum_char_t rej_msg_nosteam48[128];
 	authum_char_t rej_msg_revemu[128];

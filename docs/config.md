@@ -16,8 +16,10 @@ Authum docs for the general mechanism: [`lib/authum/docs/cfg.md`](../lib/authum/
 cstrike/addons/authum/modules/qproto/
   qproto.so
   qproto.cfg          ← loaded here
-  qproto_bans.cfg     ← optional, bans list (separate loader)
+  qproto.log          ← when LoggingMode has the file bit
 ```
+
+There is no bans file: bans are not qproto's job (see [events.md](events.md)).
 
 If `qproto.cfg` is missing, defaults stay as compiled; a log line notes that.
 Build ships a sample `qproto.cfg` at the repo root — copy it next to the `.so`.

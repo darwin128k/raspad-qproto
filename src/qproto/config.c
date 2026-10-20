@@ -1,13 +1,12 @@
 #include <qproto/config.h>
+#include <qproto/host.h>
 #include <qproto/logger.h>
-#include <qproto/paths.h>
 
 #include <authum/cfg.h>
 #include <authum/cstr.h>
+#include <authum/host.h>
 #include <authum/null.h>
 #include <authum/path.h>
-
-#include <stdio.h>
 
 qproto_config_t g_qproto_config = {
 	.engine_layout = qproto_engine_layout_auto,
@@ -34,7 +33,6 @@ qproto_config_t g_qproto_config = {
 	.logging_sinks = authum_logger_sink_file,
 
 	.rej_msg_unknown = "Client authorization failed.",
-	.rej_msg_banned = "You have been banned from this server (hardware ban).",
 	.rej_msg_nosteam47 = "Sorry, no-steam protocol 47 clients are not allowed on this server.",
 	.rej_msg_nosteam48 = "Sorry, no-steam protocol 48 clients are not allowed on this server.",
 	.rej_msg_revemu = "Sorry, RevEmu clients are not allowed on this server.",
@@ -72,8 +70,6 @@ static const authum_cfg_item_t qproto_config_items[] = {
 
 	{ "RejMsgUnknown", authum_cfg_kind_cstr, g_qproto_config.rej_msg_unknown,
 	  sizeof g_qproto_config.rej_msg_unknown },
-	{ "RejMsgBanned", authum_cfg_kind_cstr, g_qproto_config.rej_msg_banned,
-	  sizeof g_qproto_config.rej_msg_banned },
 	{ "RejMsgNoSteam47", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam47,
 	  sizeof g_qproto_config.rej_msg_nosteam47 },
 	{ "RejMsgNoSteam48", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam48,
@@ -96,7 +92,7 @@ static const authum_cfg_item_t qproto_config_items[] = {
 	  sizeof g_qproto_config.rej_msg_steam_pending },
 };
 
-static qproto_engine_layout_t
+qproto_engine_layout_t
 qproto_config_parse_engine_layout(const authum_char_t *value)
 {
 	if (authum_cstr_eq(value, "classic", authum_bool_true) ||
@@ -114,15 +110,11 @@ qproto_config_load(void)
 {
 	authum_path_t path;
 	authum_cfg_t cfg;
-	FILE *f;
 	authum_char_t layout[32];
 	authum_i32_t cid_steam;
 
-	authum_path_clear(&path);
-	f = qproto_open_data_file("qproto.cfg", &path);
-	if (authum_null_eq(f) || !authum_cfg_adopt(&cfg, f)) {
-		if (!authum_null_eq(f))
-			fclose(f);
+	if (!authum_path_join(&path, authum_host_env_module(&g_qproto_host), "qproto.cfg") ||
+	    !authum_cfg_open(&cfg, &path)) {
 		authum_logger_info(&g_qproto_logger, "qproto.cfg not found - using defaults");
 		return;
 	}

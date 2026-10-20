@@ -31,17 +31,24 @@
 2. Put under `cstrike/addons/authum/modules/qproto/`:
    - `qproto.so`
    - `qproto.cfg`
-   - `qproto_bans.cfg` (optional)
 3. List `qproto` in `addons/authum/modules.list`.
-4. Load Authum from Metamod as usual.
+4. Load Authum (ABI 0.3) from Metamod as usual.
+
+Ask it over RCON: `rcon authum qproto info` (all clients) or
+`rcon authum qproto info #userid | slot | name` (one client in detail).
+
+qproto only decides *how* a client authenticated and whether that protocol is
+allowed. Bans, history and stats are other Authum modules that use qproto's
+events — see [docs/events.md](docs/events.md).
 
 ## Build
 
 ```bash
 git submodule update --init --recursive
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build --target qproto
+cmake --build build
 # → build/modules/qproto/qproto.so
+ctest --test-dir build
 ```
 
 Authum comes from `lib/authum` (submodule). CMake pulls in `authum_client` via `add_subdirectory(lib/authum/client)`. No HLSDK / metamod-p in this module. 32-bit toolchain (`-m32`) required.
@@ -62,6 +69,10 @@ Defaults live on `g_qproto_config`; `qproto.cfg` overlays them at start.
 | Doc | Topic |
 |-----|--------|
 | [docs/config.md](docs/config.md) | qproto.cfg load, table vs custom keys |
+| [docs/events.md](docs/events.md) | Public contract for other modules: `qproto.client.authorized` / `qproto.client.query`; why no bans |
+| [lib/authum/docs/events.md](lib/authum/docs/events.md) | Authum event bus, `authum.client.*` |
+| [lib/authum/docs/sandbox.md](lib/authum/docs/sandbox.md) | Module sandbox memory, arrays |
+| [lib/authum/docs/commands.md](lib/authum/docs/commands.md) | `authum <module> <cmd>` console / RCON commands |
 | [lib/authum/docs/cfg.md](lib/authum/docs/cfg.md) | Authum flat cfg + `authum_client` |
 | [lib/authum/docs/path.md](lib/authum/docs/path.md) | `authum_path_t` / host env |
 | [lib/authum/docs/writing-a-module.md](lib/authum/docs/writing-a-module.md) | Module ABI / host facade |

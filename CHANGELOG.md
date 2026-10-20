@@ -16,7 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   hand-parsed `EngineLayout` / validated `cid_Steam`
 - Paths / logs through `authum_path_t` + `authum_host_env_*` (no ad-hoc `data_dir`)
 - `LoggingMode` bit for authum.log (host sink); default remains file-only
-- Docs: [docs/config.md](docs/config.md)
+- Event contract `<qproto/event.h>`: forward `qproto.client.authorized`
+  (`qproto_client_info_t`: protocol, ids, raw key, `long_authid`, connect name
+  and time) and query `qproto.client.query` (by index / userid / name)
+- Client registry fed by Authum `authum.client.connect` / `disconnect`
+  (was never filled on 2.0.0 after the Metamod hooks were dropped); table lives
+  in qproto's Authum sandbox
+- `authum qproto info [#userid | slot | name]` — console / RCON report of how
+  clients authenticated, routed through Authum (no engine command of its own)
+- `tests/` (CTest): registry binding / lookup, long authid, `info` command
+- Docs: [docs/config.md](docs/config.md), [docs/events.md](docs/events.md)
 
 ### Changed
 
@@ -28,6 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Engine calls via Authum host getters (no HLSDK in the module; never `host->field`)
 
 ### Removed
+
+- Bans: `qproto_bans.cfg`, `bans.c`, `RejMsgBanned`, ban/unban/kick API — a
+  ban module belongs on the event bus, not in the protocol backend
+- `qproto/api.h` dlsym API — replaced by events
+- `paths.c` fallback search (`addons/qproto`, game root, …) — module dir from
+  Authum env only
+- `static` functions (module-prefixed bricks instead)
 
 - Metamod plugin entrypoints (`h_export`, `meta_api`, `dllapi`, …) from this branch
 - C++ sources / headers (`*.cpp`, `precompiled.h`, unused `qproto_bits.h`)
