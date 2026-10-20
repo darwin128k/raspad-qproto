@@ -33,9 +33,9 @@ qproto_authum_start(authum_host_t *host)
 		qproto_set_data_dir(g_qproto_host.module_dir);
 
 	qproto_cfg_init();
-	qproto_logger_start(&g_qproto_host, (authum_logger_sink_t)g_qproto_config.logging_mode);
+	qproto_logger_start(&g_qproto_host, g_qproto_config.logging_sinks);
 	qproto_cfg_load();
-	qproto_logger_start(&g_qproto_host, (authum_logger_sink_t)g_qproto_config.logging_mode);
+	qproto_logger_start(&g_qproto_host, g_qproto_config.logging_sinks);
 
 	authum_logger_info(&g_qproto_logger, "Authum module start — data dir: %s",
 			   qproto_get_data_dir() ? qproto_get_data_dir() : "(unset)");

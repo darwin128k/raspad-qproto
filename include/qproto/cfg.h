@@ -1,10 +1,16 @@
 #ifndef QPROTO_CFG_H
 #define QPROTO_CFG_H
 
-#include "qproto/shared.h"
-#include "qproto/engine.h"
+#include <authum/bool.h>
+#include <authum/byte.h>
+#include <authum/char.h>
+#include <authum/logger/sink.h>
 
-typedef struct qproto_config {
+#include "qproto/engine.h"
+#include "qproto/shared.h"
+
+struct qproto_config
+{
 	/*
 	 * Which client_t / export layout to use when hooking engine_i486.so.
 	 * auto (default): dynsym hit ⇒ classic (8684/2018); .symtab-only ⇒ build10211.
@@ -12,17 +18,16 @@ typedef struct qproto_config {
 	 */
 	qproto_engine_layout_t engine_layout;
 
-	/* Per-emulator on/off switches, mirroring dproto.cfg's cid_* style. */
-	int enable_revemu;		/* RevEmu >= 9.74 (152-byte "rev"-signed ticket) */
-	int enable_revemu_2013;		/* RevEmu2013 (194-byte, AES+SHA256) */
-	int enable_sc2009;		/* SteamClient 2009 (178-byte, AES+SHA256) */
-	int enable_old_revemu;		/* legacy 10-byte XOR ticket */
-	int enable_sxei;		/* sXe Injected anti-cheat hardware id ("*HID" userinfo key) */
-	int enable_vellum;		/* VLLM ticket — opt-in via EnableVellum=1 in qproto.cfg */
+	/* Per-emulator on/off, mirroring dproto.cfg's cid_* style. */
+	authum_bool_t enable_revemu; /* RevEmu >= 9.74 (152-byte "rev"-signed ticket) */
+	authum_bool_t enable_revemu_2013; /* RevEmu2013 (194-byte, AES+SHA256) */
+	authum_bool_t enable_sc2009; /* SteamClient 2009 (178-byte, AES+SHA256) */
+	authum_bool_t enable_old_revemu; /* legacy 10-byte XOR ticket */
+	authum_bool_t enable_sxei; /* sXe Injected ("*HID" userinfo key) */
+	authum_bool_t enable_vellum; /* VLLM ticket — opt-in via EnableVellum=1 */
 
 	/*
-	 * cid_* (qproto_client_id_kind_t, same numbering/meaning as dproto.cfg's cid_RevEmu etc.):
-	 * which id format a successfully authorized client of that emulator/auth-kind gets.
+	 * cid_* (qproto_client_id_kind_t): id format after successful auth.
 	 */
 	qproto_client_id_kind_t cid_revemu;
 	qproto_client_id_kind_t cid_revemu_2013;
@@ -38,23 +43,24 @@ typedef struct qproto_config {
 
 	qproto_client_id_kind_t cid_steam;
 
-	/* LoggingMode → authum_logger_sink_* (console=1, file=2, host=4). */
-	int logging_mode;
+	/* LoggingMode cfg integer → authum_logger_sink_* bits. */
+	authum_logger_sink_t logging_sinks;
 
-	/* Messages shown to a REJECTED client, one per qproto_client_auth_kind_t. */
-	char rej_msg_unknown[128];
-	char rej_msg_banned[128];
-	char rej_msg_nosteam47[128];
-	char rej_msg_nosteam48[128];
-	char rej_msg_revemu[128];
-	char rej_msg_revemu_2013[128];
-	char rej_msg_sc2009[128];
-	char rej_msg_old_revemu[128];
-	char rej_msg_setti[128];
-	char rej_msg_sxei[128];
-	char rej_msg_vellum[128];
-	char rej_msg_steam_pending[128];
-} qproto_config_t;
+	/* Reject messages, one per qproto_client_auth_kind_t. */
+	authum_char_t rej_msg_unknown[128];
+	authum_char_t rej_msg_banned[128];
+	authum_char_t rej_msg_nosteam47[128];
+	authum_char_t rej_msg_nosteam48[128];
+	authum_char_t rej_msg_revemu[128];
+	authum_char_t rej_msg_revemu_2013[128];
+	authum_char_t rej_msg_sc2009[128];
+	authum_char_t rej_msg_old_revemu[128];
+	authum_char_t rej_msg_setti[128];
+	authum_char_t rej_msg_sxei[128];
+	authum_char_t rej_msg_vellum[128];
+	authum_char_t rej_msg_steam_pending[128];
+};
+typedef struct qproto_config qproto_config_t;
 
 extern qproto_config_t g_qproto_config;
 

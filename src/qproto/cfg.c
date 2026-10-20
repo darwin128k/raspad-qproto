@@ -16,12 +16,12 @@ qproto_cfg_init(void)
 
 	g_qproto_config.engine_layout = qproto_engine_layout_auto;
 
-	g_qproto_config.enable_revemu = 1;
-	g_qproto_config.enable_revemu_2013 = 1;
-	g_qproto_config.enable_sc2009 = 1;
-	g_qproto_config.enable_old_revemu = 1;
-	g_qproto_config.enable_sxei = 1;
-	g_qproto_config.enable_vellum = 0;
+	g_qproto_config.enable_revemu = authum_bool_true;
+	g_qproto_config.enable_revemu_2013 = authum_bool_true;
+	g_qproto_config.enable_sc2009 = authum_bool_true;
+	g_qproto_config.enable_old_revemu = authum_bool_true;
+	g_qproto_config.enable_sxei = authum_bool_true;
+	g_qproto_config.enable_vellum = authum_bool_false;
 
 	g_qproto_config.cid_revemu = qproto_client_id_kind_real_steam;
 	g_qproto_config.cid_revemu_2013 = qproto_client_id_kind_real_steam;
@@ -36,7 +36,7 @@ qproto_cfg_init(void)
 	g_qproto_config.cid_steam_pending = qproto_client_id_kind_steam_id_pending;
 	g_qproto_config.cid_steam = qproto_client_id_kind_real_steam;
 
-	g_qproto_config.logging_mode = authum_logger_sink_file;
+	g_qproto_config.logging_sinks = authum_logger_sink_file;
 
 	strncpy(g_qproto_config.rej_msg_unknown, "Client authorization failed.",
 		sizeof(g_qproto_config.rej_msg_unknown) - 1);
@@ -130,19 +130,19 @@ qproto_cfg_load(void)
 			else
 				g_qproto_config.engine_layout = qproto_engine_layout_auto;
 		} else if (strcasecmp(key, "EnableRevEmu") == 0) {
-			g_qproto_config.enable_revemu = atoi(value) != 0;
+			g_qproto_config.enable_revemu = atoi(value) != 0 ? authum_bool_true : authum_bool_false;
 		} else if (strcasecmp(key, "EnableRevEmu2013") == 0) {
-			g_qproto_config.enable_revemu_2013 = atoi(value) != 0;
+			g_qproto_config.enable_revemu_2013 = atoi(value) != 0 ? authum_bool_true : authum_bool_false;
 		} else if (strcasecmp(key, "EnableSC2009") == 0) {
-			g_qproto_config.enable_sc2009 = atoi(value) != 0;
+			g_qproto_config.enable_sc2009 = atoi(value) != 0 ? authum_bool_true : authum_bool_false;
 		} else if (strcasecmp(key, "EnableOldRevEmu") == 0) {
-			g_qproto_config.enable_old_revemu = atoi(value) != 0;
+			g_qproto_config.enable_old_revemu = atoi(value) != 0 ? authum_bool_true : authum_bool_false;
 		} else if (strcasecmp(key, "EnableSXEI") == 0) {
-			g_qproto_config.enable_sxei = atoi(value) != 0;
+			g_qproto_config.enable_sxei = atoi(value) != 0 ? authum_bool_true : authum_bool_false;
 		} else if (strcasecmp(key, "EnableVellum") == 0) {
-			g_qproto_config.enable_vellum = atoi(value) != 0;
+			g_qproto_config.enable_vellum = atoi(value) != 0 ? authum_bool_true : authum_bool_false;
 		} else if (strcasecmp(key, "LoggingMode") == 0) {
-			g_qproto_config.logging_mode = atoi(value);
+			g_qproto_config.logging_sinks = (authum_logger_sink_t)atoi(value);
 		} else if (strcasecmp(key, "cid_RevEmu") == 0) {
 			g_qproto_config.cid_revemu = (qproto_client_id_kind_t)atoi(value);
 		} else if (strcasecmp(key, "cid_RevEmu2013") == 0) {
@@ -194,17 +194,17 @@ qproto_cfg_load(void)
 	}
 	fclose(f);
 
-	authum_logger_info(&g_qproto_logger, "qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Vellum=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%d",
+	authum_logger_info(&g_qproto_logger, "qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Vellum=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%u",
 		path,
-		g_qproto_config.enable_revemu, (int)g_qproto_config.cid_revemu,
-		g_qproto_config.enable_revemu_2013, (int)g_qproto_config.cid_revemu_2013,
-		g_qproto_config.enable_sc2009, (int)g_qproto_config.cid_sc2009,
-		g_qproto_config.enable_old_revemu, (int)g_qproto_config.cid_old_revemu,
-		g_qproto_config.enable_sxei, (int)g_qproto_config.cid_sxei,
-		g_qproto_config.enable_vellum, (int)g_qproto_config.cid_vellum,
+		(int)g_qproto_config.enable_revemu, (int)g_qproto_config.cid_revemu,
+		(int)g_qproto_config.enable_revemu_2013, (int)g_qproto_config.cid_revemu_2013,
+		(int)g_qproto_config.enable_sc2009, (int)g_qproto_config.cid_sc2009,
+		(int)g_qproto_config.enable_old_revemu, (int)g_qproto_config.cid_old_revemu,
+		(int)g_qproto_config.enable_sxei, (int)g_qproto_config.cid_sxei,
+		(int)g_qproto_config.enable_vellum, (int)g_qproto_config.cid_vellum,
 		(int)g_qproto_config.cid_steam,
 		(int)g_qproto_config.cid_setti,
 		(int)g_qproto_config.cid_nosteam47, (int)g_qproto_config.cid_nosteam48,
 		(int)g_qproto_config.cid_steam_pending,
-		g_qproto_config.logging_mode);
+		(unsigned)g_qproto_config.logging_sinks);
 }
