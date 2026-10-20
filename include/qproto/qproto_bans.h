@@ -1,36 +1,18 @@
-#pragma once
+#ifndef QPROTO_BANS_H
+#define QPROTO_BANS_H
 
-#include <cstdint>
-#include <cstddef>
+#include <stdint.h>
+#include <stddef.h>
 
-// Bans by raw auth key (HDD serial / volume id / sXe Injected hardware id) - the
-// value qproto derives an emulated SteamID *from*, not the SteamID itself. A banned
-// player who just reruns their ticket generator gets a new fake SteamID for free;
-// the underlying HDD serial/volume id/hardware id does not change, so banning that
-// is what actually sticks. authdata_t::authKeyKind/authKey/authKeyLen (populated by
-// every authorizer in qproto_authorizers.cpp) exist specifically to make this possible.
-//
-// Loaded from qproto_bans.cfg (search: addons/qproto/ → gamedir → HLDS root; see
-// qproto_paths.h): one hex-encoded key per line. qproto_hook.cpp logs the exact hex
-// string for every successfully emulated auth, so running a client once and copying
-// that line into qproto_bans.cfg is the intended workflow for banning them.
+/*
+ * Bans by raw auth key (HDD serial / volume id / sXe Injected hardware id) - the
+ * value qproto derives an emulated SteamID from, not the SteamID itself.
+ */
 
-void qproto_bans_load();
-bool qproto_bans_is_banned(const uint8_t* key, size_t len);
+void qproto_bans_load(void);
+int qproto_bans_is_banned(const uint8_t *key, size_t len);
+int qproto_bans_add(const uint8_t *key, size_t len);
+int qproto_bans_remove(const uint8_t *key, size_t len);
+int qproto_bans_parse_hex_line(const char *line, uint8_t *out_key, size_t *out_len);
 
-// Adds a key to the in-memory ban list AND appends its hex encoding to
-// qproto_bans.cfg on disk, so it survives a server restart. Returns false if
-// key/len is invalid (len==0 or too long), the table is full, or the key is
-// already banned (no duplicate entries).
-bool qproto_bans_add(const uint8_t* key, size_t len);
-
-// Removes a key from the in-memory ban list and rewrites qproto_bans.cfg from what
-// remains (there's no clean way to delete one line from a text file in place).
-// Returns false if the key wasn't banned.
-bool qproto_bans_remove(const uint8_t* key, size_t len);
-
-// Exposed separately for unit testing (tests/src/qproto/bans_selftest.cpp) - pure
-// parsing logic, no file I/O or engine dependency. Decodes one already-trimmed,
-// comment-stripped line of hex digits into outKey (must be at least strlen(line)/2
-// bytes); returns false (outLen untouched) if the line isn't valid even-length hex.
-bool qproto_bans_parse_hex_line(const char* line, uint8_t* outKey, size_t* outLen);
+#endif /* QPROTO_BANS_H */

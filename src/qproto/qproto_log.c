@@ -4,16 +4,14 @@
 #include "qproto/qproto_log.h"
 #include "qproto/qproto_shared.h"
 
-#include <cstdio>
-#include <cstdarg>
-#include <ctime>
-#include <cstring>
+#include <stdio.h>
+#include <stdarg.h>
+#include <time.h>
+#include <string.h>
 
-namespace {
-FILE *g_log_file;
-int g_mode;
-char g_log_path[512];
-}
+static FILE *g_log_file;
+static int g_mode;
+static char g_log_path[512];
 
 void
 qproto_log_init(int logging_mode)
@@ -25,21 +23,26 @@ qproto_log_init(int logging_mode)
 	if (!(g_mode & rl_logfile) || g_log_file)
 		return;
 
-	const char *mod_dir = qproto_get_data_dir();
-	if (mod_dir) {
-		snprintf(g_log_path, sizeof(g_log_path), "%s/qproto.log", mod_dir);
-	} else {
-		char game_dir[256] = {};
-		authum_engine_get_game_dir(qproto_host_engine(), game_dir, sizeof game_dir);
-		snprintf(g_log_path, sizeof(g_log_path), "%s/addons/authum/modules/qproto/qproto.log",
-			 game_dir);
+	{
+		const char *mod_dir = qproto_get_data_dir();
+		if (mod_dir) {
+			snprintf(g_log_path, sizeof(g_log_path), "%s/qproto.log", mod_dir);
+		} else {
+			char game_dir[256];
+			memset(game_dir, 0, sizeof(game_dir));
+			authum_engine_get_game_dir(qproto_host_engine(), game_dir, sizeof game_dir);
+			snprintf(g_log_path, sizeof(g_log_path), "%s/addons/authum/modules/qproto/qproto.log",
+				 game_dir);
+		}
 	}
 
 	g_log_file = fopen(g_log_path, "a");
 	if (g_log_file) {
-		setvbuf(g_log_file, nullptr, _IONBF, 0);
-		time_t t = time(nullptr);
-		fprintf(g_log_file, "\n---- qproto (Authum module) log opened %s", ctime(&t));
+		setvbuf(g_log_file, NULL, _IONBF, 0);
+		{
+			time_t t = time(NULL);
+			fprintf(g_log_file, "\n---- qproto (Authum module) log opened %s", ctime(&t));
+		}
 		if (g_mode & rl_host) {
 			snprintf(note, sizeof(note), "[qproto] qproto.log opened: %s", g_log_path);
 			qproto_host_log(0, note);
@@ -51,11 +54,11 @@ qproto_log_init(int logging_mode)
 }
 
 void
-qproto_log_close()
+qproto_log_close(void)
 {
 	if (g_log_file) {
 		fclose(g_log_file);
-		g_log_file = nullptr;
+		g_log_file = NULL;
 	}
 }
 
@@ -78,7 +81,7 @@ qproto_log(const char *fmt, ...)
 	}
 
 	if ((g_mode & rl_logfile) && g_log_file) {
-		time_t t = time(nullptr);
+		time_t t = time(NULL);
 		struct tm *lt = localtime(&t);
 		fprintf(g_log_file, "[%02d:%02d:%02d] %s\n", lt->tm_hour, lt->tm_min, lt->tm_sec, buf);
 	}
@@ -93,16 +96,20 @@ qproto_log(const char *fmt, ...)
 void
 qproto_log_hex_dump(const char *label, const void *data, int len)
 {
+	const unsigned char *p;
+	char line[128];
+	int i;
+
 	if (!(g_mode & (rl_console | rl_logfile | rl_host)))
 		return;
 
-	const unsigned char *p = (const unsigned char *)data;
+	p = (const unsigned char *)data;
 	qproto_log("%s (%d bytes):", label, len);
 
-	char line[128];
-	for (int i = 0; i < len; i += 16) {
+	for (i = 0; i < len; i += 16) {
 		int pos = snprintf(line, sizeof(line), "  %04x: ", i);
-		for (int j = 0; j < 16 && i + j < len; j++) {
+		int j;
+		for (j = 0; j < 16 && i + j < len; j++) {
 			pos += snprintf(line + pos, sizeof(line) - pos, "%02x ", p[i + j]);
 		}
 		qproto_log("%s", line);

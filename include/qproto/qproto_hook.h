@@ -1,10 +1,13 @@
-#pragma once
+#ifndef QPROTO_HOOK_H
+#define QPROTO_HOOK_H
 
-// Installs/removes the inline JMP detour on the engine's Steam_NotifyClientConnect,
-// and implements the replacement that falls back to qproto_authorizers.cpp when
-// native Steam validation fails. See qproto_hook.cpp for the full rationale - this
-// mirrors exactly what was validated in hook_selftest.cpp (SV_GetIDString) and
-// authorizers_selftest.cpp (RevEmu2013 ticket), just wired into one real plugin hook.
+/*
+ * Installs/removes the inline JMP detour on the engine's Steam_NotifyClientConnect,
+ * and implements the replacement that falls back to qproto_authorizers.c when
+ * native Steam validation fails.
+ */
 
-bool qproto_hook_install();
-void qproto_hook_remove();
+int qproto_hook_install(void);
+void qproto_hook_remove(void);
+
+#endif /* QPROTO_HOOK_H */

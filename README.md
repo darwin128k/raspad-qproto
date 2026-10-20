@@ -5,7 +5,7 @@
 <h1 align="center">qproto</h1>
 
 <p align="center">
-  <b>2.0.0</b> — Authum module for classic HLDS<br>
+  <b>2.0.0</b> — Authum module for classic HLDS (pure C11)<br>
   dproto-style non-Steam authorization + Vellum ticket protocol
 </p>
 
@@ -23,7 +23,7 @@
 | Branch | Product |
 |--------|---------|
 | `1.0.0` / `master` | Metamod-P plugin `qproto_i386.so` |
-| `2.0.0` | Authum client module `qproto.so` (this line) |
+| `2.0.0` | Authum client module `qproto.so` (pure C11, this line) |
 
 ## Install (Authum)
 

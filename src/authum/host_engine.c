@@ -1,15 +1,11 @@
 #include "host_engine.h"
 
-namespace {
-
-const authum_engine_t *g_engine = nullptr;
-
-} // namespace
+static const authum_engine_t *g_engine = NULL;
 
 void
 qproto_host_engine_bind(const authum_host_t *host)
 {
-	g_engine = (host && host->engine) ? host->engine : nullptr;
+	g_engine = (host && host->engine) ? host->engine : NULL;
 }
 
 const authum_engine_t *

@@ -1,14 +1,9 @@
-#pragma once
+#ifndef QPROTO_HOST_LOG_H
+#define QPROTO_HOST_LOG_H
 
 #include <authum/host.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 void qproto_host_log_bind(const authum_host_t *host);
 void qproto_host_log(int is_error, const char *line);
 
-#ifdef __cplusplus
-}
-#endif
+#endif /* QPROTO_HOST_LOG_H */

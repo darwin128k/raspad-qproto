@@ -1,12 +1,8 @@
 #include "qproto/qproto_data_dir.h"
 
-#include <cstring>
+#include <string.h>
 
-namespace {
-
-char g_data_dir[512];
-
-} // namespace
+static char g_data_dir[512];
 
 void
 qproto_set_data_dir(const char *dir)
@@ -22,5 +18,5 @@ qproto_set_data_dir(const char *dir)
 const char *
 qproto_get_data_dir(void)
 {
-	return g_data_dir[0] ? g_data_dir : nullptr;
+	return g_data_dir[0] ? g_data_dir : NULL;
 }

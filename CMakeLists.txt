@@ -1,12 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
-project(qproto C CXX)
+project(qproto C)
 
-# Authum client module (ABI 0.2). Metamod plugin build lives on branch 1.0.0 only.
+# Authum client module (ABI 0.2), pure C11. Metamod plugin build lives on branch 1.0.0 only.
 # No HLSDK / metamod-p here — engine + crypto go through Authum host facades.
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
 
 set(AUTHUM_SRC_DIR "" CACHE PATH "Checkout of raspad-authum (for include/authum)")
 if (AUTHUM_SRC_DIR STREQUAL "" OR NOT EXISTS "${AUTHUM_SRC_DIR}/include/authum/client.h")
@@ -28,21 +28,21 @@ message(STATUS "qproto: Authum headers from ${AUTHUM_SRC_DIR}")
 add_library(qproto MODULE
         src/authum/info.c
         src/authum/module.c
-        src/authum/bridge.cpp
-        src/authum/host_log.cpp
-        src/authum/host_crypto.cpp
-        src/authum/host_engine.cpp
-        src/authum/data_dir.cpp
-        src/qproto/qproto_hook.cpp
-        src/qproto/qproto_engine.cpp
-        src/qproto/qproto_cfg.cpp
-        src/qproto/qproto_authorizers.cpp
-        src/qproto/qproto_utils.cpp
-        src/qproto/qproto_bans.cpp
-        src/qproto/qproto_client_state.cpp
-        src/qproto/qproto_api.cpp
-        src/qproto/qproto_log.cpp
-        src/qproto/qproto_paths.cpp
+        src/authum/bridge.c
+        src/authum/host_log.c
+        src/authum/host_crypto.c
+        src/authum/host_engine.c
+        src/authum/data_dir.c
+        src/qproto/qproto_hook.c
+        src/qproto/qproto_engine.c
+        src/qproto/qproto_cfg.c
+        src/qproto/qproto_authorizers.c
+        src/qproto/qproto_utils.c
+        src/qproto/qproto_bans.c
+        src/qproto/qproto_client_state.c
+        src/qproto/qproto_api.c
+        src/qproto/qproto_log.c
+        src/qproto/qproto_paths.c
 )
 
 set_target_properties(qproto PROPERTIES
@@ -63,7 +63,6 @@ target_compile_definitions(qproto PRIVATE linux LINUX)
 if (NOT MSVC)
     target_compile_options(qproto PRIVATE
             -m32
-            -fpermissive
             -fvisibility=hidden
             -Wall
             -ffunction-sections
@@ -72,7 +71,6 @@ if (NOT MSVC)
     target_link_options(qproto PRIVATE
             -m32
             -static-libgcc
-            -static-libstdc++
             "LINKER:--gc-sections"
     )
 endif ()

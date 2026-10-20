@@ -1,15 +1,11 @@
 #include "host_log.h"
 
-namespace {
-
-authum_host_log_fn g_host_log = nullptr;
-
-} // namespace
+static authum_host_log_fn g_host_log = NULL;
 
 void
 qproto_host_log_bind(const authum_host_t *host)
 {
-	g_host_log = (host && host->log) ? host->log : nullptr;
+	g_host_log = (host && host->log) ? host->log : NULL;
 }
 
 void
