@@ -17,11 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Public API renamed to **snake_case** (`qproto_hook_install`, `qproto_log`, …)
 - Branch `2.0.0` is Authum-only; Metamod plugin stays on `1.0.0`
 - RevEmu Rijndael + SHA-256 via Authum crypto facade (`host->crypto` → lh session API)
+- Engine calls (game dir / print / kick) via Authum `host->engine` (no HLSDK in the module)
 
 ### Removed
 
 - Metamod plugin entrypoints (`h_export`, `meta_api`, `dllapi`, …) from this branch
 - Vendored `Rijndael` / `sha2` sources (crypto only through Authum/lh)
+- `lib/metamod-p` / HLSDK / `sdk_util` dependency from this branch
 
 ## [1.0.0] - 2026-10-19
 

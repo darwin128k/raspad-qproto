@@ -18,7 +18,7 @@ struct authdata_t
 	// from classic HLDS authdata_t. Pre-extracted by
 	// the caller (qproto_hook.cpp, which has engine function pointers) rather than
 	// looked up in here, so this file stays engine-free and unit-testable in isolation
-	// (see qproto_authorizers's own test in tests/, which links none of extdll.h).
+	// (see qproto_authorizers's own test in tests/, which needs no engine headers).
 	int				protocol = 0;			// negotiated client protocol (47 or 48), from Info_ValueForKey(protinfo, "prot")
 	const char*		sxeiHidHex = nullptr;	// Info_ValueForKey(userinfo, "*HID"), or null/empty if absent (sXe Injected hardware id, hex string)
 

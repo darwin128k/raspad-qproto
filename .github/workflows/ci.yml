@@ -17,10 +17,6 @@ jobs:
           sudo apt-get install -y \
             g++-multilib ninja-build cmake \
             libstdc++-12-dev:i386
-      - name: metamod-p headers
-        run: |
-          git clone --depth 1 --branch v1.21p109 \
-            https://github.com/Bots-United/metamod-p.git lib/metamod-p
       - name: Authum headers
         run: |
           git clone --depth 1 --branch 2.0.0 \

@@ -1,7 +1,4 @@
-#include <cmath>
-#include <extdll.h>
-#include <enginecallback.h>
-
+#include "host_engine.h"
 #include "host_log.h"
 #include "qproto/qproto_data_dir.h"
 #include "qproto/qproto_log.h"
@@ -33,7 +30,7 @@ qproto_log_init(int logging_mode)
 		snprintf(g_log_path, sizeof(g_log_path), "%s/qproto.log", mod_dir);
 	} else {
 		char game_dir[256] = {};
-		(*g_engfuncs.pfnGetGameDir)(game_dir);
+		authum_engine_get_game_dir(qproto_host_engine(), game_dir, sizeof game_dir);
 		snprintf(g_log_path, sizeof(g_log_path), "%s/addons/authum/modules/qproto/qproto.log",
 			 game_dir);
 	}
@@ -89,7 +86,7 @@ qproto_log(const char *fmt, ...)
 	if (g_mode & rl_console) {
 		char console_buf[1040];
 		snprintf(console_buf, sizeof(console_buf), "[QPROTO] %s\n", buf);
-		(*g_engfuncs.pfnServerPrint)(console_buf);
+		authum_engine_server_print(qproto_host_engine(), console_buf);
 	}
 }
 

@@ -38,10 +38,7 @@
 ## Build
 
 ```bash
-# Needs Authum headers (sibling checkout) and lib/metamod-p (HLSDK headers).
-git clone --depth 1 --branch v1.21p109 \
-  https://github.com/Bots-United/metamod-p.git lib/metamod-p
-
+# Needs Authum headers only (sibling checkout). No HLSDK / metamod-p in this module.
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
   -DAUTHUM_SRC_DIR=../raspad-authum
 cmake --build build --target qproto

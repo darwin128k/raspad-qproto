@@ -1,11 +1,9 @@
 #include "qproto/precompiled.h"
-#include <cmath>	// must precede extdll.h - see qproto_hook.cpp for why
-#include <extdll.h>
-#include <enginecallback.h>
 #include "qproto/qproto_api.h"
 #include "qproto/qproto_client_state.h"
 #include "qproto/qproto_bans.h"
 #include "host_crypto.h"
+#include "host_engine.h"
 #include <authum/crypto.h>
 
 #include <cstring>
@@ -209,7 +207,7 @@ void IssueKick(int userid, const char* reason)
 	else {
 		snprintf(cmd, sizeof(cmd), "kick #%d\n", userid);
 	}
-	(*g_engfuncs.pfnServerCommand)(cmd);
+	authum_engine_server_command(qproto_host_engine(), cmd);
 }
 
 } // namespace

@@ -29,9 +29,7 @@
 #include <cstring>
 #include <cstdint>
 #include <cstdlib>
-#include <cmath>	// must precede extdll.h: its min/max macros break <limits>/<cmath> if pulled in after
 
-#include <extdll.h>
 #include "qproto/qproto_hook.h"
 #include "qproto/qproto_authorizers.h"
 #include "qproto/qproto_log.h"
@@ -39,7 +37,6 @@
 #include "qproto/qproto_bans.h"
 #include "qproto/qproto_client_state.h"
 #include "qproto/qproto_engine.h"
-#include "sdk_util.h"
 #include <cstdio>
 
 namespace {

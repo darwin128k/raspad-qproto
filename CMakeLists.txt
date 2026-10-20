@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 project(qproto C CXX)
 
 # Authum client module (ABI 0.2). Metamod plugin build lives on branch 1.0.0 only.
+# No HLSDK / metamod-p here — engine + crypto go through Authum host facades.
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,21 +25,14 @@ if (NOT EXISTS "${AUTHUM_SRC_DIR}/include/authum/client.h")
 endif ()
 message(STATUS "qproto: Authum headers from ${AUTHUM_SRC_DIR}")
 
-set(METAMOD_P_DIR "${CMAKE_SOURCE_DIR}/lib/metamod-p")
-if (NOT EXISTS "${METAMOD_P_DIR}/metamod/meta_api.h")
-    message(FATAL_ERROR "lib/metamod-p missing — clone Bots-United/metamod-p into lib/metamod-p")
-endif ()
-set(DEP_METAMOD "${METAMOD_P_DIR}/metamod")
-set(DEP_HLSDK "${METAMOD_P_DIR}/hlsdk")
-
 add_library(qproto MODULE
         src/authum/info.c
         src/authum/module.c
         src/authum/bridge.cpp
         src/authum/host_log.cpp
         src/authum/host_crypto.cpp
+        src/authum/host_engine.cpp
         src/authum/data_dir.cpp
-        src/authum/engfuncs_shim.cpp
         src/qproto/qproto_hook.cpp
         src/qproto/qproto_engine.cpp
         src/qproto/qproto_cfg.cpp
@@ -49,7 +43,6 @@ add_library(qproto MODULE
         src/qproto/qproto_api.cpp
         src/qproto/qproto_log.cpp
         src/qproto/qproto_paths.cpp
-        "${DEP_METAMOD}/sdk_util.cpp"
 )
 
 set_target_properties(qproto PROPERTIES
@@ -63,11 +56,6 @@ target_include_directories(qproto PRIVATE
         "${AUTHUM_SRC_DIR}/include"
         "${CMAKE_SOURCE_DIR}/include"
         "${CMAKE_SOURCE_DIR}/src/authum"
-        "${DEP_METAMOD}"
-        "${DEP_HLSDK}/dlls"
-        "${DEP_HLSDK}/engine"
-        "${DEP_HLSDK}/common"
-        "${DEP_HLSDK}/pm_shared"
 )
 
 target_compile_definitions(qproto PRIVATE linux LINUX)

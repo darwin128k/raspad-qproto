@@ -1,7 +1,4 @@
-#include <cmath>
-#include <extdll.h>
-#include <enginecallback.h>
-
+#include "host_engine.h"
 #include "qproto/qproto_data_dir.h"
 #include "qproto/qproto_paths.h"
 
@@ -23,7 +20,7 @@ qproto_open_data_file(const char *name, char *out_path, size_t out_path_len)
 	}
 
 	char game_dir[256] = {};
-	(*g_engfuncs.pfnGetGameDir)(game_dir);
+	authum_engine_get_game_dir(qproto_host_engine(), game_dir, sizeof game_dir);
 
 	const char *patterns[] = {
 		"%s/addons/authum/modules/qproto/%s",

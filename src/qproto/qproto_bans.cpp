@@ -1,6 +1,3 @@
-#include <cmath>	// must precede extdll.h - see qproto_hook.cpp for why
-#include <extdll.h>
-#include <enginecallback.h>
 #include "qproto/qproto_bans.h"
 #include "qproto/qproto_log.h"
 #include "qproto/qproto_paths.h"

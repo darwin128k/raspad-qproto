@@ -1,10 +1,7 @@
 #include "bridge.h"
 #include "host_crypto.h"
+#include "host_engine.h"
 #include "host_log.h"
-
-#include <cmath> /* before extdll.h — HLSDK min/max macros vs C++ */
-#include <extdll.h>
-#include <enginecallback.h>
 
 #include "qproto/qproto_bans.h"
 #include "qproto/qproto_cfg.h"
@@ -12,46 +9,25 @@
 #include "qproto/qproto_hook.h"
 #include "qproto/qproto_log.h"
 
-#include <cstring>
-
-extern enginefuncs_t g_engfuncs;
-extern globalvars_t *gpGlobals;
-
-namespace {
-
-bool
-bind_engine_from_host(const authum_host_t *host)
-{
-	if (!host || !host->engine_funcs || !host->globals)
-		return false;
-
-	auto *ef = static_cast<enginefuncs_t *>(host->engine_funcs());
-	auto *gv = static_cast<globalvars_t *>(host->globals());
-	if (!ef || !gv)
-		return false;
-
-	std::memcpy(&g_engfuncs, ef, sizeof(g_engfuncs));
-	gpGlobals = gv;
-	return true;
-}
-
-} // namespace
-
 authum_bool_t
 qproto_authum_start(authum_host_t *host)
 {
 	if (!host)
 		return AUTHUM_FALSE;
 
-	if (!bind_engine_from_host(host))
-		return AUTHUM_FALSE;
-
 	qproto_host_log_bind(host);
 	qproto_host_crypto_bind(host);
+	qproto_host_engine_bind(host);
+
 	if (!qproto_host_crypto_ready()) {
 		qproto_host_log(1, "qproto: host crypto missing (authum_host_t.crypto)");
 		return AUTHUM_FALSE;
 	}
+	if (!qproto_host_engine_ready()) {
+		qproto_host_log(1, "qproto: host engine missing (authum_host_t.engine)");
+		return AUTHUM_FALSE;
+	}
+
 	if (host->module_dir && host->module_dir[0])
 		qproto_set_data_dir(host->module_dir);
 
@@ -83,6 +59,7 @@ qproto_authum_stop(void)
 	qproto_hook_remove();
 	qproto_log("Authum module stop — hook removed");
 	qproto_log_close();
+	qproto_host_engine_bind(nullptr);
 	qproto_host_crypto_bind(nullptr);
 	qproto_host_log_bind(nullptr);
 }
