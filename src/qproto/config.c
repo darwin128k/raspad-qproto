@@ -46,49 +46,49 @@ qproto_config_t g_qproto_config = {
     .rej_msg_steam_pending = "Sorry, unauthorized/pending clients are not allowed on this server.",
 };
 
-/* Plain key → field map. Custom keys (EngineLayout, cid_Steam) stay below. */
+/* Plain key → field map. Custom keys (engine_layout, cid_steam) stay below. */
 static const authum_cfg_item_t qproto_config_items[] = {
-    {"EnableRevEmu", authum_cfg_kind_bool, &g_qproto_config.enable_revemu, 0},
-    {"EnableRevEmu2013", authum_cfg_kind_bool, &g_qproto_config.enable_revemu_2013, 0},
-    {"EnableSC2009", authum_cfg_kind_bool, &g_qproto_config.enable_sc2009, 0},
-    {"EnableOldRevEmu", authum_cfg_kind_bool, &g_qproto_config.enable_old_revemu, 0},
-    {"EnableSXEI", authum_cfg_kind_bool, &g_qproto_config.enable_sxei, 0},
-    {"EnableVellum", authum_cfg_kind_bool, &g_qproto_config.enable_vellum, 0},
+    {"enable_revemu", authum_cfg_kind_bool, &g_qproto_config.enable_revemu, 0},
+    {"enable_revemu_2013", authum_cfg_kind_bool, &g_qproto_config.enable_revemu_2013, 0},
+    {"enable_sc2009", authum_cfg_kind_bool, &g_qproto_config.enable_sc2009, 0},
+    {"enable_old_revemu", authum_cfg_kind_bool, &g_qproto_config.enable_old_revemu, 0},
+    {"enable_sxei", authum_cfg_kind_bool, &g_qproto_config.enable_sxei, 0},
+    {"enable_vellum", authum_cfg_kind_bool, &g_qproto_config.enable_vellum, 0},
 
-    {"LoggingMode", authum_cfg_kind_u32, &g_qproto_config.logging_sinks, 0},
+    {"logging_mode", authum_cfg_kind_u32, &g_qproto_config.logging_sinks, 0},
 
-    {"cid_RevEmu", authum_cfg_kind_i32, &g_qproto_config.cid_revemu, 0},
-    {"cid_RevEmu2013", authum_cfg_kind_i32, &g_qproto_config.cid_revemu_2013, 0},
-    {"cid_SC2009", authum_cfg_kind_i32, &g_qproto_config.cid_sc2009, 0},
-    {"cid_OldRevEmu", authum_cfg_kind_i32, &g_qproto_config.cid_old_revemu, 0},
-    {"cid_SXEI", authum_cfg_kind_i32, &g_qproto_config.cid_sxei, 0},
-    {"cid_Vellum", authum_cfg_kind_i32, &g_qproto_config.cid_vellum, 0},
-    {"cid_Setti", authum_cfg_kind_i32, &g_qproto_config.cid_setti, 0},
-    {"cid_NoSteam47", authum_cfg_kind_i32, &g_qproto_config.cid_nosteam47, 0},
-    {"cid_NoSteam48", authum_cfg_kind_i32, &g_qproto_config.cid_nosteam48, 0},
-    {"cid_SteamPending", authum_cfg_kind_i32, &g_qproto_config.cid_steam_pending, 0},
+    {"cid_revemu", authum_cfg_kind_i32, &g_qproto_config.cid_revemu, 0},
+    {"cid_revemu_2013", authum_cfg_kind_i32, &g_qproto_config.cid_revemu_2013, 0},
+    {"cid_sc2009", authum_cfg_kind_i32, &g_qproto_config.cid_sc2009, 0},
+    {"cid_old_revemu", authum_cfg_kind_i32, &g_qproto_config.cid_old_revemu, 0},
+    {"cid_sxei", authum_cfg_kind_i32, &g_qproto_config.cid_sxei, 0},
+    {"cid_vellum", authum_cfg_kind_i32, &g_qproto_config.cid_vellum, 0},
+    {"cid_setti", authum_cfg_kind_i32, &g_qproto_config.cid_setti, 0},
+    {"cid_nosteam47", authum_cfg_kind_i32, &g_qproto_config.cid_nosteam47, 0},
+    {"cid_nosteam48", authum_cfg_kind_i32, &g_qproto_config.cid_nosteam48, 0},
+    {"cid_steam_pending", authum_cfg_kind_i32, &g_qproto_config.cid_steam_pending, 0},
 
-    {"RejMsgUnknown", authum_cfg_kind_cstr, g_qproto_config.rej_msg_unknown,
+    {"rej_msg_unknown", authum_cfg_kind_cstr, g_qproto_config.rej_msg_unknown,
      sizeof g_qproto_config.rej_msg_unknown},
-    {"RejMsgNoSteam47", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam47,
+    {"rej_msg_nosteam47", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam47,
      sizeof g_qproto_config.rej_msg_nosteam47},
-    {"RejMsgNoSteam48", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam48,
+    {"rej_msg_nosteam48", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam48,
      sizeof g_qproto_config.rej_msg_nosteam48},
-    {"RejMsgRevEmu", authum_cfg_kind_cstr, g_qproto_config.rej_msg_revemu,
+    {"rej_msg_revemu", authum_cfg_kind_cstr, g_qproto_config.rej_msg_revemu,
      sizeof g_qproto_config.rej_msg_revemu},
-    {"RejMsgRevEmu2013", authum_cfg_kind_cstr, g_qproto_config.rej_msg_revemu_2013,
+    {"rej_msg_revemu_2013", authum_cfg_kind_cstr, g_qproto_config.rej_msg_revemu_2013,
      sizeof g_qproto_config.rej_msg_revemu_2013},
-    {"RejMsgSC2009", authum_cfg_kind_cstr, g_qproto_config.rej_msg_sc2009,
+    {"rej_msg_sc2009", authum_cfg_kind_cstr, g_qproto_config.rej_msg_sc2009,
      sizeof g_qproto_config.rej_msg_sc2009},
-    {"RejMsgOldRevEmu", authum_cfg_kind_cstr, g_qproto_config.rej_msg_old_revemu,
+    {"rej_msg_old_revemu", authum_cfg_kind_cstr, g_qproto_config.rej_msg_old_revemu,
      sizeof g_qproto_config.rej_msg_old_revemu},
-    {"RejMsgSetti", authum_cfg_kind_cstr, g_qproto_config.rej_msg_setti,
+    {"rej_msg_setti", authum_cfg_kind_cstr, g_qproto_config.rej_msg_setti,
      sizeof g_qproto_config.rej_msg_setti},
-    {"RejMsgSXEI", authum_cfg_kind_cstr, g_qproto_config.rej_msg_sxei,
+    {"rej_msg_sxei", authum_cfg_kind_cstr, g_qproto_config.rej_msg_sxei,
      sizeof g_qproto_config.rej_msg_sxei},
-    {"RejMsgVellum", authum_cfg_kind_cstr, g_qproto_config.rej_msg_vellum,
+    {"rej_msg_vellum", authum_cfg_kind_cstr, g_qproto_config.rej_msg_vellum,
      sizeof g_qproto_config.rej_msg_vellum},
-    {"RejMsgSteamPending", authum_cfg_kind_cstr, g_qproto_config.rej_msg_steam_pending,
+    {"rej_msg_steam_pending", authum_cfg_kind_cstr, g_qproto_config.rej_msg_steam_pending,
      sizeof g_qproto_config.rej_msg_steam_pending},
 };
 
@@ -129,18 +129,18 @@ qproto_config_load(void)
         &cfg, qproto_config_items,
         (authum_usize_t)(sizeof qproto_config_items / sizeof qproto_config_items[0]));
 
-    if (authum_cfg_apply_cstr(&cfg, "EngineLayout", layout, sizeof layout))
+    if (authum_cfg_apply_cstr(&cfg, "engine_layout", layout, sizeof layout))
     {
         g_qproto_config.engine_layout = qproto_config_parse_engine_layout(layout);
     }
 
-    if (authum_cfg_apply_cstr(&cfg, "LoggingSplit", split, sizeof split))
+    if (authum_cfg_apply_cstr(&cfg, "logging_split", split, sizeof split))
     {
         g_qproto_config.logging_split = authum_logger_file_split_parse(split);
     }
 
     cid_steam = (authum_i32_t)g_qproto_config.cid_steam;
-    if (authum_cfg_apply_i32(&cfg, "cid_Steam", &cid_steam))
+    if (authum_cfg_apply_i32(&cfg, "cid_steam", &cid_steam))
     {
         if (cid_steam == (authum_i32_t)qproto_client_id_kind_steam_by_ip ||
             cid_steam == (authum_i32_t)qproto_client_id_kind_valve_by_ip ||
@@ -156,7 +156,7 @@ qproto_config_load(void)
         &g_qproto_logger,
         "qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) "
         "OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Vellum=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) "
-        "NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) LoggingMode=%u LoggingSplit=%s",
+        "NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d) logging_mode=%u logging_split=%s",
         authum_path_as_cstr(&path), (int)g_qproto_config.enable_revemu,
         (int)g_qproto_config.cid_revemu, (int)g_qproto_config.enable_revemu_2013,
         (int)g_qproto_config.cid_revemu_2013, (int)g_qproto_config.enable_sc2009,

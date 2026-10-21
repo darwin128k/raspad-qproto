@@ -16,7 +16,7 @@ Authum docs for the general mechanism: [`lib/authum/docs/cfg.md`](../lib/authum/
 cstrike/addons/authum/modules/qproto/
   qproto.so
   qproto.cfg          ← loaded here
-  qproto.log          ← when LoggingMode has the file bit
+  qproto.log          ← when logging_mode has the file bit
 ```
 
 There is no bans file: bans are not qproto's job (see [events.md](events.md)).
@@ -32,9 +32,9 @@ Build ships a sample `qproto.cfg` at the repo root — copy it next to the `.so`
 2. `authum_cfg_apply_items` with `qproto_config_items[]` — bools, cids, sink
    flags, reject messages.
 3. **Custom keys** that are not plain table fields:
-   - `EngineLayout` — string → `qproto_engine_layout_t` (`auto` / `classic` /
+   - `engine_layout` — string → `qproto_engine_layout_t` (`auto` / `classic` /
      `8684` / `2018` / `10211` / …)
-   - `cid_Steam` — integer, accepted only for a small allow-list; garbage keeps
+   - `cid_steam` — integer, accepted only for a small allow-list; garbage keeps
      the default
 4. `authum_cfg_close`.
 
@@ -50,18 +50,18 @@ See comments / examples in `qproto.cfg`. Groups:
 
 | Group | Examples | Kind |
 |-------|----------|------|
-| Emulator toggles | `EnableRevEmu`, `EnableVellum`, … | bool |
-| Client-id policy | `cid_RevEmu`, `cid_NoSteam47`, … | i32 (enum values) |
-| Logging | `LoggingMode` | u32 bit mask → `authum_logger_sink_t` |
-| Logging | `LoggingSplit` | custom: `full` \| `session` |
-| Reject messages | `RejMsgRevEmu`, … | cstr (fixed buffers) |
-| Engine | `EngineLayout` | custom string parse |
-| Steam cid | `cid_Steam` | custom validated i32 |
+| Emulator toggles | `enable_revemu`, `enable_vellum`, … | bool |
+| Client-id policy | `cid_revemu`, `cid_nosteam47`, … | i32 (enum values) |
+| Logging | `logging_mode` | u32 bit mask → `authum_logger_sink_t` |
+| Logging | `logging_split` | custom: `full` \| `session` |
+| Reject messages | `rej_msg_revemu`, … | cstr (fixed buffers) |
+| Engine | `engine_layout` | custom string parse |
+| Steam cid | `cid_steam` | custom validated i32 |
 
-`LoggingMode`: `2` = file only, `4` = authum.log (host) only, `6` = both
+`logging_mode`: `2` = file only, `4` = authum.log (host) only, `6` = both
 (default in code is file-only).
 
-`LoggingSplit` (when the file bit is set): Authum
+`logging_split` (when the file bit is set): Authum
 `authum_logger_file_split_*` — `full` = one `qproto.log` (default); `session` =
 new file under `modules/qproto/logs/` each start.
 
@@ -81,7 +81,7 @@ new file under `modules/qproto/logs/` each start.
 2. Do **not** force it into the items table.
 3. After `authum_cfg_apply_items`, call `authum_cfg_apply_cstr` /
    `authum_cfg_apply_i32` (or `get_*`) and map/validate in
-   `qproto_config_load` (same pattern as `EngineLayout` / `cid_Steam`).
+   `qproto_config_load` (same pattern as `engine_layout` / `cid_steam`).
 
 ---
 
