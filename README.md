@@ -5,7 +5,7 @@
 <h1 align="center">qproto</h1>
 
 <p align="center">
-  <b>1.0.0</b> — Metamod-P auth plugin for classic HLDS<br>
+  <b>1.0.2</b> — Metamod-P auth plugin for classic HLDS<br>
   dproto-style non-Steam authorization + Vellum ticket protocol
 </p>
 
