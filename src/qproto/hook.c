@@ -318,11 +318,12 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
 
     if (kind == qproto_client_auth_kind_unknown)
     {
+        /* Native already returned 0 — do not call SV_RejectConnection again
+         * (second reject on a dead netchan crashes HLDS). */
         authum_logger_info(
             &g_qproto_logger,
             "no authorizer matched (protocol=%d, ticketLen=%d) - keeping native rejection",
             authdata.protocol, (int)authdata.ticket_len);
-        qproto_hook_send_reject(client, g_qproto_config.rej_msg_unknown);
         return 0;
     }
 
@@ -347,11 +348,11 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
     auth_id_type = qproto_hook_auth_id_type(cid);
     if (auth_id_type < 0)
     {
+        /* Same as unknown: native already rejected — no second SV_RejectConnection. */
         authum_logger_info(
             &g_qproto_logger,
             "%s authorized but cid=%d (dproto.cfg-style) means reject - keeping native rejection",
             qproto_client_auth_kind_name(kind), (int)cid);
-        qproto_hook_send_reject(client, qproto_hook_reject_message(kind));
         return 0;
     }
 
