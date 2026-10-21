@@ -47,34 +47,16 @@ namespace {
 typedef int (*SteamNotifyClientConnect_t)(void* client, char* authBuf, int len);
 typedef char* (*CmdArgv_t)(int);
 typedef char* (*InfoValueForKey_t)(char*, char*);
-typedef void (*SVRejectConnection_t)(void* adr, const char* fmt, ...);
 
 void* g_hookTarget;
 SteamNotifyClientConnect_t g_real;
 CmdArgv_t g_Cmd_Argv;
 InfoValueForKey_t g_Info_ValueForKey;
-SVRejectConnection_t g_SV_RejectConnection;
 unsigned char g_savedBytes[5];
 bool g_installed;
 uintptr_t g_networkUseridOffset = 0x4a90;
 uintptr_t g_remoteAddressOffset = 0x20;
 
-// Sends `message` to the still-connecting client as its own out-of-band reject packet,
-// via the real engine's SV_RejectConnection - the exact same mechanism classic HLDS auth uses for
-// its per-emulator dp_rejmsg_* cvars (client_auth.cpp's deprecated-id rejection).
-// Confirmed via ReHLDS's own open source (sv_main.cpp) that the *native* engine still
-// unconditionally sends its own generic "STEAM validation rejected\n" right after this
-// (see qproto_hook.cpp's header comment / the conversation that led here) - classic HLDS auth
-// lives with that exact same double-packet behavior in production, so we do too rather
-// than trying to suppress it (not possible from inside this hook regardless).
-// `client`'s netchan.remote_address is already populated by SV_ConnectClient before
-// this hook ever runs, so we just point straight into it - no need to construct our own.
-void SendCustomReject(void* client, const char* message)
-{
-	if (!g_SV_RejectConnection) return;
-	void* adr = (uint8_t*)client + g_remoteAddressOffset;
-	g_SV_RejectConnection(adr, "%s\n", message); // literal format string - message is never itself a format string
-}
 
 void PatchJmp(void* target, void* dest, unsigned char* saveBack)
 {
@@ -188,25 +170,6 @@ const char* Qproto_GetAuthorizerName(client_auth_kind kind)
 	}
 }
 
-// Picks which qproto.cfg RejMsg* the client actually sees when their cid_* resolves to
-// CI_DEPRECATED - matches classic deprecated-id rejection (client_auth.cpp), which
-// does the exact same per-authkind cvar lookup.
-const char* RejectMessageForAuthKind(client_auth_kind kind)
-{
-	switch (kind) {
-		case CA_NO_STEAM_47: return g_qprotoConfig.rejMsgNoSteam47;
-		case CA_NO_STEAM_48: return g_qprotoConfig.rejMsgNoSteam48;
-		case CA_REVEMU: return g_qprotoConfig.rejMsgRevEmu;
-		case CA_REVEMU_2013: return g_qprotoConfig.rejMsgRevEmu2013;
-		case CA_STEAMCLIENT_2009: return g_qprotoConfig.rejMsgSC2009;
-		case CA_OLD_REVEMU: return g_qprotoConfig.rejMsgOldRevEmu;
-		case CA_SETTI: return g_qprotoConfig.rejMsgSetti;
-		case CA_SXEI: return g_qprotoConfig.rejMsgSXEI;
-		case CA_VELLUM: return g_qprotoConfig.rejMsgVellum;
-		case CA_STEAM_PENDING: return g_qprotoConfig.rejMsgSteamPending;
-		default: return g_qprotoConfig.rejMsgUnknown;
-	}
-}
 
 int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 {
@@ -405,9 +368,8 @@ bool Qproto_Hook_Install()
 
 	g_Cmd_Argv = (CmdArgv_t)Qproto_Engine_Resolve("Cmd_Argv", nullptr);
 	g_Info_ValueForKey = (InfoValueForKey_t)Qproto_Engine_Resolve("Info_ValueForKey", nullptr);
-	g_SV_RejectConnection = (SVRejectConnection_t)Qproto_Engine_Resolve("SV_RejectConnection", nullptr);
-	Qproto_Log("Cmd_Argv=%p Info_ValueForKey=%p SV_RejectConnection=%p",
-		(void*)g_Cmd_Argv, (void*)g_Info_ValueForKey, (void*)g_SV_RejectConnection);
+	Qproto_Log("Cmd_Argv=%p Info_ValueForKey=%p",
+		(void*)g_Cmd_Argv, (void*)g_Info_ValueForKey);
 
 	PatchJmp(g_hookTarget, (void*)&Qproto_Steam_NotifyClientConnect_hook, g_savedBytes);
 	g_installed = true;

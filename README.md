@@ -67,7 +67,6 @@ Linux CI (GitHub Actions) builds `qproto_i386.so` on `master` only. Tag `v*` (or
 
 ## Config
 
-See `qproto.cfg` for `Enable*`, `cid_*`, `EngineLayout`, `RejMsg*`, `LoggingMode`.
 
 | `EngineLayout` | Meaning |
 | --- | --- |

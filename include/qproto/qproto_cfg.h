@@ -61,24 +61,6 @@ struct QprotoConfig
 	// is opened, so with bit rl_logfile unset the file is never even created/touched.
 	int loggingMode = rl_logfile;
 
-	// Messages shown to a REJECTED client, one per client_auth_kind - matches classic // dp_rejmsg_* cvars in spirit (client_auth.cpp's deprecated-id rejection), sent
-	// via SV_RejectConnection (qproto_hook.cpp's SendCustomReject/RejectMessageForAuthKind)
-	// before the native engine's own generic "STEAM validation rejected" follows
-	// regardless - see qproto_hook.cpp's header comment for why that's expected and fine.
-	// Fires only when the relevant cid_* above (or qproto_bans.cfg) actually rejects -
-	// e.g. rejMsgNoSteam47/48 show up out of the box since those default to Deprecated.
-	char rejMsgUnknown[128] = "Client authorization failed.";
-	char rejMsgBanned[128] = "You have been banned from this server (hardware ban).";
-	char rejMsgNoSteam47[128] = "Sorry, no-steam protocol 47 clients are not allowed on this server.";
-	char rejMsgNoSteam48[128] = "Sorry, no-steam protocol 48 clients are not allowed on this server.";
-	char rejMsgRevEmu[128] = "Sorry, RevEmu clients are not allowed on this server.";
-	char rejMsgRevEmu2013[128] = "Sorry, RevEmu2013 clients are not allowed on this server.";
-	char rejMsgSC2009[128] = "Sorry, SC2009 clients are not allowed on this server.";
-	char rejMsgOldRevEmu[128] = "Sorry, Old RevEmu clients are not allowed on this server.";
-	char rejMsgSetti[128] = "Sorry, Setti is not allowed on this server.";
-	char rejMsgSXEI[128] = "Sorry, sXe Injected clients are not allowed on this server.";
-	char rejMsgVellum[128] = "Sorry, Vellum clients are not allowed on this server.";
-	char rejMsgSteamPending[128] = "Sorry, unauthorized/pending clients are not allowed on this server.";
 };
 
 extern QprotoConfig g_qprotoConfig;

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-10-21
+
+### Removed
+
+- Dead custom reject strings (`RejMsg*` / `rej_msg_*`): after native Steam auth
+  fails, a second `SV_RejectConnection` crashes HLDS, so players only saw the
+  engine message. Removed unused cfg keys and helpers.
+
+
 ## [1.0.2] - 2026-10-21
 
 ### Fixed
@@ -38,6 +47,7 @@ First tagged release of qproto as a Metamod-P plugin for classic HLDS.
 - Linux CI on `master` (i386 Release) and release workflow that attaches `qproto_i386.so` to tag `v*`
 - Ready binary: [Releases](https://github.com/darwin128k/raspad-qproto/releases) (`qproto_i386.so`)
 
-[Unreleased]: https://github.com/darwin128k/raspad-qproto/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/darwin128k/raspad-qproto/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/darwin128k/raspad-qproto/releases/tag/v1.0.3
 [1.0.2]: https://github.com/darwin128k/raspad-qproto/releases/tag/v1.0.2
 [1.0.0]: https://github.com/darwin128k/raspad-qproto/releases/tag/v1.0.0

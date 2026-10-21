@@ -130,42 +130,6 @@ void Qproto_Cfg_Load()
 		else if (strcasecmp(key, "cid_SteamPending") == 0) {
 			g_qprotoConfig.cidSteamPending = (client_id_kind)atoi(value);
 		}
-		else if (strcasecmp(key, "RejMsgUnknown") == 0) {
-			strncpy(g_qprotoConfig.rejMsgUnknown, value, sizeof(g_qprotoConfig.rejMsgUnknown) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgBanned") == 0) {
-			strncpy(g_qprotoConfig.rejMsgBanned, value, sizeof(g_qprotoConfig.rejMsgBanned) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgNoSteam47") == 0) {
-			strncpy(g_qprotoConfig.rejMsgNoSteam47, value, sizeof(g_qprotoConfig.rejMsgNoSteam47) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgNoSteam48") == 0) {
-			strncpy(g_qprotoConfig.rejMsgNoSteam48, value, sizeof(g_qprotoConfig.rejMsgNoSteam48) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgRevEmu") == 0) {
-			strncpy(g_qprotoConfig.rejMsgRevEmu, value, sizeof(g_qprotoConfig.rejMsgRevEmu) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgRevEmu2013") == 0) {
-			strncpy(g_qprotoConfig.rejMsgRevEmu2013, value, sizeof(g_qprotoConfig.rejMsgRevEmu2013) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgSC2009") == 0) {
-			strncpy(g_qprotoConfig.rejMsgSC2009, value, sizeof(g_qprotoConfig.rejMsgSC2009) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgOldRevEmu") == 0) {
-			strncpy(g_qprotoConfig.rejMsgOldRevEmu, value, sizeof(g_qprotoConfig.rejMsgOldRevEmu) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgSetti") == 0) {
-			strncpy(g_qprotoConfig.rejMsgSetti, value, sizeof(g_qprotoConfig.rejMsgSetti) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgSXEI") == 0) {
-			strncpy(g_qprotoConfig.rejMsgSXEI, value, sizeof(g_qprotoConfig.rejMsgSXEI) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgVellum") == 0) {
-			strncpy(g_qprotoConfig.rejMsgVellum, value, sizeof(g_qprotoConfig.rejMsgVellum) - 1);
-		}
-		else if (strcasecmp(key, "RejMsgSteamPending") == 0) {
-			strncpy(g_qprotoConfig.rejMsgSteamPending, value, sizeof(g_qprotoConfig.rejMsgSteamPending) - 1);
-		}
 	}
 	fclose(f);
 
