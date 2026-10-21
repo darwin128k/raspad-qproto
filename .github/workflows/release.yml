@@ -84,8 +84,8 @@ jobs:
           TAG="${{ steps.tag.outputs.name }}"
           NOTES=$(mktemp)
           python3 scripts/release_notes.py --tag "$TAG" \
-            --package "Download **`qproto-linux32-metamod.zip`** and unpack → `addons/qproto/`." \
-            --highlight "Metamod plugin zip: .so + qproto.cfg + qproto_bans.cfg"
+            --package "Download **\`qproto-linux32-metamod.zip\`** and unpack → \`addons/qproto/\`." \
+            --highlight "Metamod plugin zip: .so + qproto.cfg + qproto_bans.cfg" \
             > "$NOTES"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --title "$TAG" --notes-file "$NOTES"
