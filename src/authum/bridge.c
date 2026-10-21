@@ -23,7 +23,7 @@ qproto_authum_start(authum_host_t *host)
 
     g_qproto_host = *host;
 
-    /* Host sink only until cfg loads LoggingMode. */
+    /* Host sink only until cfg loads logging_mode. */
     authum_logger_init(&g_qproto_logger, &g_qproto_host, authum_logger_sink_host, "qproto");
 
     if (authum_null_eq(authum_host_crypto(&g_qproto_host)) ||

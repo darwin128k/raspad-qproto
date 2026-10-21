@@ -3,7 +3,7 @@
 
 #include <authum/logger.h>
 
-/* Module-owned Authum logger. LoggingMode cfg bits == authum_logger_sink_*. */
+/* Module-owned Authum logger. logging_mode cfg bits == authum_logger_sink_*. */
 extern authum_logger_t g_qproto_logger;
 
 void
