@@ -62,7 +62,7 @@ Defaults live on `g_qproto_config`; `qproto.cfg` overlays them at start.
   **[docs/config.md](docs/config.md)**
 - Authum cfg API (any module): [`lib/authum/docs/cfg.md`](lib/authum/docs/cfg.md)
 
-`logging_mode`: `2` = file only, `4` = authum.log only, `6` = both.
+`logging_mode`: `4` = authum.log only (default), `2` = private file, `6` = both.
 
 ## Docs
 

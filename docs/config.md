@@ -16,7 +16,7 @@ Authum docs for the general mechanism: [`lib/authum/docs/cfg.md`](../lib/authum/
 cstrike/addons/authum/modules/qproto/
   qproto.so
   qproto.cfg          ← loaded here
-  qproto.log          ← when logging_mode has the file bit
+  qproto.log          ← only if logging_mode includes file bit (2); default is authum.log
 ```
 
 There is no bans file: bans are not qproto's job (see [events.md](events.md)).
@@ -58,7 +58,7 @@ See comments / examples in `qproto.cfg`. Groups:
 | Engine | `engine_layout` | custom string parse |
 | Steam cid | `cid_steam` | custom validated i32 |
 
-`logging_mode`: `2` = file only, `4` = authum.log (host) only, `6` = both
+`logging_mode`: `4` = authum.log (host) only (default), `2` = private file, `6` = both
 (default in code is file-only).
 
 `logging_split` (when the file bit is set): Authum
