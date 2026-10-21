@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-10-21
+
+### Fixed
+
+- Do not call `SV_RejectConnection` again after the engine already rejected the
+  connect (unknown auth, cid reject, ban) — the second reject crashed HLDS on a
+  dead netchan (Vellum / non-Steam clients).
+
+### Changed
+
+- `EnableVellum = 1` in the shipped `qproto.cfg` so raspad-revloader VLLM tickets
+  work out of the box (still overridable).
+
+
 ## [1.0.0] - 2026-10-19
 
 First tagged release of qproto as a Metamod-P plugin for classic HLDS.
@@ -24,5 +38,6 @@ First tagged release of qproto as a Metamod-P plugin for classic HLDS.
 - Linux CI on `master` (i386 Release) and release workflow that attaches `qproto_i386.so` to tag `v*`
 - Ready binary: [Releases](https://github.com/darwin128k/raspad-qproto/releases) (`qproto_i386.so`)
 
-[Unreleased]: https://github.com/darwin128k/raspad-qproto/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/darwin128k/raspad-qproto/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/darwin128k/raspad-qproto/releases/tag/v1.0.2
 [1.0.0]: https://github.com/darwin128k/raspad-qproto/releases/tag/v1.0.0

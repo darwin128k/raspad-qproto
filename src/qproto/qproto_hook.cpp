@@ -304,9 +304,10 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	client_auth_kind kind = Qproto_Authorize_Client(&authdata, true, true);
 
 	if (kind == CA_UNKNOWN) {
+		/* Native already returned 0 — do not call SV_RejectConnection again
+		 * (second reject on a dead netchan crashes HLDS). */
 		Qproto_Log("no authorizer matched (protocol=%d, ticketLen=%d) - keeping native rejection",
 			authdata.protocol, (int)authdata.ticketLen);
-		SendCustomReject(client, g_qprotoConfig.rejMsgUnknown);
 		return 0;
 	}
 
@@ -319,8 +320,8 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 			Qproto_GetAuthorizerName(kind), hex);
 
 		if (Qproto_Bans_IsBanned((const uint8_t*)authdata.authKey, authdata.authKeyLen)) {
-			Qproto_Log("REJECTED: raw auth key is on the qproto_bans.cfg ban list");
-			SendCustomReject(client, g_qprotoConfig.rejMsgBanned);
+			/* Native already rejected — no second SV_RejectConnection (HLDS crash). */
+			Qproto_Log("REJECTED: raw auth key is on the qproto_bans.cfg ban list - keeping native rejection");
 			return 0;
 		}
 	}
@@ -337,9 +338,9 @@ int Qproto_Steam_NotifyClientConnect_hook(void* client, char* authBuf, int len)
 	client_id_kind cid = CidForAuthKind(kind);
 	int authIdType = MapClientIdKindToAuthIdType(cid);
 	if (authIdType < 0) {
+		/* Same as unknown: native already rejected — no second SV_RejectConnection. */
 		Qproto_Log("%s authorized but cid=%d (dproto.cfg-style) means reject - keeping native rejection",
 			Qproto_GetAuthorizerName(kind), (int)cid);
-		SendCustomReject(client, RejectMessageForAuthKind(kind));
 		return 0;
 	}
 
