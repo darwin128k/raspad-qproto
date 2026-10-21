@@ -82,6 +82,31 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ steps.tag.outputs.name }}"
-          gh release view "$TAG" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "$TAG" --notes "qproto $TAG — Linux i386 Metamod package (zip: addons/qproto/)."
+          NOTES_FILE=$(mktemp)
+          {
+            echo "## Package"
+            echo
+            echo "Linux i386 Metamod plugin package (`qproto-linux32-metamod.zip` → `addons/qproto/`)."
+            echo
+            if [ -f CHANGELOG.md ]; then
+              echo "## Changelog"
+              echo
+              awk '/^## / { if (seen++) exit; } seen { print }' CHANGELOG.md
+              echo
+            fi
+          } > "$NOTES_FILE"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "$TAG" --notes-file "$NOTES_FILE" --generate-notes
+          else
+            gen=$(mktemp)
+            gh api "repos/${{ github.repository }}/releases/generate-notes" \
+              -f tag_name="$TAG" -f target_commitish="${{ github.sha }}" \
+              --jq .body > "$gen" || true
+            {
+              cat "$NOTES_FILE"
+              echo
+              if [ -s "$gen" ]; then cat "$gen"; fi
+            } > "$NOTES_FILE.full"
+            gh release edit "$TAG" --notes-file "$NOTES_FILE.full"
+          fi
           gh release upload "$TAG" qproto-linux32-metamod.zip --clobber
