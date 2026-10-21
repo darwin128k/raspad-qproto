@@ -24,6 +24,8 @@ add_library(qproto_core STATIC
         src/qproto/command.c
         src/qproto/authorizers.c
         src/qproto/utils.c
+        src/qproto/vellum/address.c
+        src/qproto/vellum/keystore.c
 )
 target_include_directories(qproto_core PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_link_libraries(qproto_core PUBLIC authum_client)

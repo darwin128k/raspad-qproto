@@ -45,7 +45,7 @@ enum qproto_client_auth_kind
     qproto_client_auth_kind_steamclient_2009 = 8, /* SteamClient (alias for revemu) */
     qproto_client_auth_kind_revemu_2013 = 9,      /* RevEmu 2013 (serial number of first HDD) */
     qproto_client_auth_kind_sxei = 10,            /* sXe Injected anticheat ID */
-    qproto_client_auth_kind_vellum = 11, /* raspad-revloader steamclient (64-byte VLLM ticket) */
+    qproto_client_auth_kind_vellum = 11, /* raspad-revloader steamclient (signed VLLM v2 ticket) */
 
     qproto_client_auth_kind_max,
 };

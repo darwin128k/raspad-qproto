@@ -26,6 +26,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <time.h>
 
 #include <qproto/hook.h>
 #include <qproto/authorizers.h>
@@ -34,14 +35,17 @@
 #include <qproto/config.h>
 #include <qproto/client/state.h>
 #include <qproto/engine.h>
+#include <qproto/vellum/address.h>
 
 typedef int (*steam_notify_client_connect_fn)(void *client, char *auth_buf, int len);
 typedef char *(*cmd_argv_fn)(int);
 typedef char *(*info_value_for_key_fn)(char *, char *);
+typedef char *(*cvar_variable_string_fn)(const char *);
 static void *g_hook_target;
 static steam_notify_client_connect_fn g_real;
 static cmd_argv_fn g_cmd_argv;
 static info_value_for_key_fn g_info_value_for_key;
+static cvar_variable_string_fn g_cvar_variable_string;
 static unsigned char g_saved_bytes[5];
 static int g_installed;
 static uintptr_t g_network_userid_offset = 0x4a90;
@@ -164,6 +168,49 @@ qproto_hook_is_numeric_auth_kind(qproto_client_auth_kind_t kind)
     }
 }
 
+/* Port the engine listens on: same precedence as NET_OpenIP. 0 = unknown. */
+static authum_u32_t
+hook_server_port(void)
+{
+    static const char *const names[] = {"ip_hostport", "hostport", "port"};
+    const char *value;
+    int port;
+    size_t i;
+
+    if (!g_cvar_variable_string)
+    {
+        return 0u;
+    }
+    for (i = 0; i < sizeof names / sizeof names[0]; i++)
+    {
+        value = g_cvar_variable_string(names[i]);
+        port = value ? atoi(value) : 0;
+        if (port > 0 && port < 65536)
+        {
+            return (authum_u32_t)port;
+        }
+    }
+    return 0u;
+}
+
+/* Where Vellum tickets must point: vellum_server_ip, else the engine's `ip` cvar. */
+static void
+hook_vellum_context(qproto_authdata_t *authdata, authum_u32_t ips[QPROTO_VELLUM_MAX_SERVER_IPS])
+{
+    if (g_qproto_config.vellum_server_ip_count > 0u)
+    {
+        authdata->server_ips = g_qproto_config.vellum_server_ips;
+        authdata->server_ip_count = g_qproto_config.vellum_server_ip_count;
+    }
+    else if (g_cvar_variable_string)
+    {
+        authdata->server_ips = ips;
+        authdata->server_ip_count =
+            qproto_vellum_parse_ip_list(g_cvar_variable_string("ip"), ips, 1u);
+    }
+    authdata->server_port = hook_server_port();
+    authdata->now = (authum_i64_t)time(NULL);
+}
 
 int
 qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
@@ -179,6 +226,7 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
     int auth_id_type;
     uint32_t final_steam_id;
     qproto_client_info_t rec;
+    authum_u32_t vellum_ips[QPROTO_VELLUM_MAX_SERVER_IPS];
 
     authum_logger_info(&g_qproto_logger, "hook fired: client=%p authBuf=%p len=%d", client,
                        (void *)auth_buf, len);
@@ -263,6 +311,7 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
     authdata.ticket_len = (authum_usize_t)(auth_buf ? len : 0);
     authdata.protocol = protocol;
     authdata.sxei_hid_hex = sxei_hid_hex;
+    hook_vellum_context(&authdata, vellum_ips);
 
     if (auth_buf && len > 0)
     {
@@ -271,6 +320,13 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
     }
 
     kind = qproto_authorize_client(&authdata, authum_bool_true, authum_bool_true);
+
+    if (kind == qproto_client_auth_kind_unknown && authdata.rejected)
+    {
+        authum_logger_info(&g_qproto_logger, "rejected: %s - keeping native rejection",
+                           authdata.reject_reason);
+        return 0;
+    }
 
     if (kind == qproto_client_auth_kind_unknown)
     {
@@ -377,8 +433,17 @@ qproto_hook_install(void)
 
     g_cmd_argv = (cmd_argv_fn)qproto_engine_resolve("Cmd_Argv", NULL);
     g_info_value_for_key = (info_value_for_key_fn)qproto_engine_resolve("Info_ValueForKey", NULL);
-    authum_logger_info(&g_qproto_logger, "Cmd_Argv=%p Info_ValueForKey=%p",
-                       (void *)g_cmd_argv, (void *)g_info_value_for_key);
+    g_cvar_variable_string =
+        (cvar_variable_string_fn)qproto_engine_resolve("Cvar_VariableString", NULL);
+    authum_logger_info(&g_qproto_logger, "Cmd_Argv=%p Info_ValueForKey=%p Cvar_VariableString=%p",
+                       (void *)g_cmd_argv, (void *)g_info_value_for_key,
+                       (void *)g_cvar_variable_string);
+    if (!g_cvar_variable_string && g_qproto_config.vellum_server_ip_count == 0u)
+    {
+        authum_logger_info(&g_qproto_logger,
+                           "Vellum: server address unknown - tickets are not tied to this "
+                           "server; set vellum_server_ip in qproto.cfg");
+    }
 
     qproto_hook_patch_jmp(g_hook_target, (void *)&qproto_steam_notify_client_connect_hook,
                           g_saved_bytes);
