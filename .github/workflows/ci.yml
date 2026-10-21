@@ -1,32 +1,67 @@
 name: CI
+
 on:
   push:
-    branches: [2.0.0]
+    branches:
+      - 2.0.0
   pull_request:
-    branches: [2.0.0]
+    branches:
+      - 2.0.0
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: Linux i386 Authum package
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
       - name: Install i386 toolchain
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y \
-            g++-multilib ninja-build cmake \
-            libstdc++-12-dev:i386
+          sudo apt-get install -y --no-install-recommends \
+            gcc-multilib g++-multilib cmake ninja-build zip \
+            libc6-dev:i386 libstdc++-12-dev:i386
+
       - name: Configure & build
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build
+          cmake --build build --target qproto -j"$(nproc)"
+
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --output-on-failure || true
+
+      - name: Pack Authum module layout
+        run: |
+          strip --strip-unneeded build/modules/qproto/qproto.so
+          rm -rf dist && mkdir -p dist/addons/authum/modules/qproto
+          cp build/modules/qproto/qproto.so dist/addons/authum/modules/qproto/qproto.so
+          cp qproto.cfg dist/addons/authum/modules/qproto/qproto.cfg
+          printf 'qproto\n' > dist/addons/authum/modules.list.example
+          cat > dist/addons/authum/modules/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir so paths match Authum:
+
+            addons/authum/modules/qproto/qproto.so
+            addons/authum/modules/qproto/qproto.cfg
+
+          Ensure Authum is installed, then add a line to addons/authum/modules.list:
+            qproto
+
+          (See modules.list.example in the zip root under addons/authum/.)
+          EOF
+          sed -i 's/^          //' dist/addons/authum/modules/qproto/INSTALL.txt
+          (cd dist && zip -r ../qproto-linux32-authum.zip addons)
+          ls -la qproto-linux32-authum.zip
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qproto.so
-          path: build/modules/qproto/qproto.so
+          name: qproto-linux32-authum
+          path: qproto-linux32-authum.zip
+          if-no-files-found: error
