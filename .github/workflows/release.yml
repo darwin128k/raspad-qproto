@@ -75,31 +75,15 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ steps.tag.outputs.name }}"
-          NOTES_FILE=$(mktemp)
-          {
-            echo "## Package"
-            echo
-            echo "Linux i386 Authum module package (`qproto-linux32-authum.zip` → `addons/authum/modules/qproto/`)."
-            echo
-            if [ -f CHANGELOG.md ]; then
-              echo "## Changelog"
-              echo
-              awk '/^## / { if (seen++) exit; } seen { print }' CHANGELOG.md
-              echo
-            fi
-          } > "$NOTES_FILE"
+          NOTES=$(mktemp)
+          python3 scripts/release_notes.py --tag "$TAG" \
+            --package "Download **`qproto-linux32-authum.zip`** and unpack → `addons/authum/modules/qproto/`." \
+            --highlight "Authum client module (needs Authum host)" \
+            --highlight "Pure C11; events + authum qproto info"
+            > "$NOTES"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
-            gh release create "$TAG" --title "$TAG" --notes-file "$NOTES_FILE" --generate-notes
+            gh release create "$TAG" --title "$TAG" --notes-file "$NOTES"
           else
-            gen=$(mktemp)
-            gh api "repos/${{ github.repository }}/releases/generate-notes" \
-              -f tag_name="$TAG" -f target_commitish="${{ github.sha }}" \
-              --jq .body > "$gen" || true
-            {
-              cat "$NOTES_FILE"
-              echo
-              if [ -s "$gen" ]; then cat "$gen"; fi
-            } > "$NOTES_FILE.full"
-            gh release edit "$TAG" --notes-file "$NOTES_FILE.full"
+            gh release edit "$TAG" --notes-file "$NOTES"
           fi
           gh release upload "$TAG" qproto-linux32-authum.zip --clobber
