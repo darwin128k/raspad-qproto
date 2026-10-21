@@ -30,7 +30,6 @@ Build ships a sample `qproto.cfg` at the repo root — copy it next to the `.so`
 
 1. Open `qproto.cfg` under the module env path (`authum_host_env_module` + join).
 2. `authum_cfg_apply_items` with `qproto_config_items[]` — bools, cids, sink
-   flags, reject messages.
 3. **Custom keys** that are not plain table fields:
    - `engine_layout` — string → `qproto_engine_layout_t` (`auto` / `classic` /
      `8684` / `2018` / `10211` / …)
@@ -54,7 +53,6 @@ See comments / examples in `qproto.cfg`. Groups:
 | Client-id policy | `cid_revemu`, `cid_nosteam47`, … | i32 (enum values) |
 | Logging | `logging_mode` | u32 bit mask → `authum_logger_sink_t` |
 | Logging | `logging_split` | custom: `full` \| `session` |
-| Reject messages | `rej_msg_revemu`, … | cstr (fixed buffers) |
 | Engine | `engine_layout` | custom string parse |
 | Steam cid | `cid_steam` | custom validated i32 |
 

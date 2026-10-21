@@ -32,18 +32,6 @@ qproto_config_t g_qproto_config = {
 
     .logging_sinks = authum_logger_sink_host,
     .logging_split = authum_logger_file_split_full,
-
-    .rej_msg_unknown = "Client authorization failed.",
-    .rej_msg_nosteam47 = "Sorry, no-steam protocol 47 clients are not allowed on this server.",
-    .rej_msg_nosteam48 = "Sorry, no-steam protocol 48 clients are not allowed on this server.",
-    .rej_msg_revemu = "Sorry, RevEmu clients are not allowed on this server.",
-    .rej_msg_revemu_2013 = "Sorry, RevEmu2013 clients are not allowed on this server.",
-    .rej_msg_sc2009 = "Sorry, SC2009 clients are not allowed on this server.",
-    .rej_msg_old_revemu = "Sorry, Old RevEmu clients are not allowed on this server.",
-    .rej_msg_setti = "Sorry, Setti is not allowed on this server.",
-    .rej_msg_sxei = "Sorry, sXe Injected clients are not allowed on this server.",
-    .rej_msg_vellum = "Sorry, Vellum clients are not allowed on this server.",
-    .rej_msg_steam_pending = "Sorry, unauthorized/pending clients are not allowed on this server.",
 };
 
 /* Plain key → field map. Custom keys (engine_layout, cid_steam) stay below. */
@@ -67,29 +55,6 @@ static const authum_cfg_item_t qproto_config_items[] = {
     {"cid_nosteam47", authum_cfg_kind_i32, &g_qproto_config.cid_nosteam47, 0},
     {"cid_nosteam48", authum_cfg_kind_i32, &g_qproto_config.cid_nosteam48, 0},
     {"cid_steam_pending", authum_cfg_kind_i32, &g_qproto_config.cid_steam_pending, 0},
-
-    {"rej_msg_unknown", authum_cfg_kind_cstr, g_qproto_config.rej_msg_unknown,
-     sizeof g_qproto_config.rej_msg_unknown},
-    {"rej_msg_nosteam47", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam47,
-     sizeof g_qproto_config.rej_msg_nosteam47},
-    {"rej_msg_nosteam48", authum_cfg_kind_cstr, g_qproto_config.rej_msg_nosteam48,
-     sizeof g_qproto_config.rej_msg_nosteam48},
-    {"rej_msg_revemu", authum_cfg_kind_cstr, g_qproto_config.rej_msg_revemu,
-     sizeof g_qproto_config.rej_msg_revemu},
-    {"rej_msg_revemu_2013", authum_cfg_kind_cstr, g_qproto_config.rej_msg_revemu_2013,
-     sizeof g_qproto_config.rej_msg_revemu_2013},
-    {"rej_msg_sc2009", authum_cfg_kind_cstr, g_qproto_config.rej_msg_sc2009,
-     sizeof g_qproto_config.rej_msg_sc2009},
-    {"rej_msg_old_revemu", authum_cfg_kind_cstr, g_qproto_config.rej_msg_old_revemu,
-     sizeof g_qproto_config.rej_msg_old_revemu},
-    {"rej_msg_setti", authum_cfg_kind_cstr, g_qproto_config.rej_msg_setti,
-     sizeof g_qproto_config.rej_msg_setti},
-    {"rej_msg_sxei", authum_cfg_kind_cstr, g_qproto_config.rej_msg_sxei,
-     sizeof g_qproto_config.rej_msg_sxei},
-    {"rej_msg_vellum", authum_cfg_kind_cstr, g_qproto_config.rej_msg_vellum,
-     sizeof g_qproto_config.rej_msg_vellum},
-    {"rej_msg_steam_pending", authum_cfg_kind_cstr, g_qproto_config.rej_msg_steam_pending,
-     sizeof g_qproto_config.rej_msg_steam_pending},
 };
 
 qproto_engine_layout_t

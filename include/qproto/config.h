@@ -41,18 +41,6 @@ struct qproto_config
     authum_logger_sink_t logging_sinks;
     /** File layout when the file bit is set — Authum `full` / `session`. */
     authum_logger_file_split_t logging_split;
-
-    authum_char_t rej_msg_unknown[128];
-    authum_char_t rej_msg_nosteam47[128];
-    authum_char_t rej_msg_nosteam48[128];
-    authum_char_t rej_msg_revemu[128];
-    authum_char_t rej_msg_revemu_2013[128];
-    authum_char_t rej_msg_sc2009[128];
-    authum_char_t rej_msg_old_revemu[128];
-    authum_char_t rej_msg_setti[128];
-    authum_char_t rej_msg_sxei[128];
-    authum_char_t rej_msg_vellum[128];
-    authum_char_t rej_msg_steam_pending[128];
 };
 typedef struct qproto_config qproto_config_t;
 

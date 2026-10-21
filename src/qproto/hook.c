@@ -185,27 +185,16 @@ qproto_hook_reject_message(qproto_client_auth_kind_t kind)
     switch (kind)
     {
     case qproto_client_auth_kind_no_steam_47:
-        return g_qproto_config.rej_msg_nosteam47;
     case qproto_client_auth_kind_no_steam_48:
-        return g_qproto_config.rej_msg_nosteam48;
     case qproto_client_auth_kind_revemu:
-        return g_qproto_config.rej_msg_revemu;
     case qproto_client_auth_kind_revemu_2013:
-        return g_qproto_config.rej_msg_revemu_2013;
     case qproto_client_auth_kind_steamclient_2009:
-        return g_qproto_config.rej_msg_sc2009;
     case qproto_client_auth_kind_old_revemu:
-        return g_qproto_config.rej_msg_old_revemu;
     case qproto_client_auth_kind_setti:
-        return g_qproto_config.rej_msg_setti;
     case qproto_client_auth_kind_sxei:
-        return g_qproto_config.rej_msg_sxei;
     case qproto_client_auth_kind_vellum:
-        return g_qproto_config.rej_msg_vellum;
     case qproto_client_auth_kind_steam_pending:
-        return g_qproto_config.rej_msg_steam_pending;
     default:
-        return g_qproto_config.rej_msg_unknown;
     }
 }
 
