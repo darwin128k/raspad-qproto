@@ -31,6 +31,7 @@
 2. Put under `cstrike/addons/authum/modules/qproto/`:
    - `qproto.so`
    - `qproto.cfg`
+   - (`vellum_keys.txt` is created there by qproto — keep it across updates)
 3. List `qproto` in `addons/authum/modules.list`.
 4. Load Authum (ABI 0.3) from Metamod as usual.
 
@@ -40,6 +41,30 @@ Ask it over RCON: `rcon authum qproto info` (all clients) or
 qproto only decides *how* a client authenticated and whether that protocol is
 allowed. Bans, history and stats are other Authum modules that use qproto's
 events — see [docs/events.md](docs/events.md).
+
+## Vellum v2 (raspad-revloader clients)
+
+Vellum tickets are **signed** (Ed25519). Each player has a key pair in their
+user profile; the SteamID is derived from the public key, and every connect is
+signed for this server's address and the player's clock.
+
+- **No SteamID forgery** — without the player's key nobody can produce their
+  SteamID; the first key seen for a SteamID is pinned in `vellum_keys.txt`,
+  and a different key for that SteamID is refused.
+- **No ticket replay** — a ticket collected by one server does not work on
+  another (address-bound) or a day later (clock-bound).
+- **No machine data** — the player's hostname / disk serial are no longer sent.
+- **Old clients refused** — unsigned v1 tickets (raspad-revloader before v2)
+  get a logged rejection; players must update the client.
+
+Server setup: on a public server set `vellum_server_ip` in `qproto.cfg` to the
+address players connect to (especially behind NAT); otherwise the `ip` cvar is
+used, and without it only the port is checked. Rejections are logged with the
+reason (`rejected: Vellum ...`). A player who lost their key gets a new
+SteamID; to hand them the old one, delete its line from `vellum_keys.txt`.
+
+Ed25519 comes from Authum (`<authum/crypto/ed25519.h>`, built into
+`authum_client`) — no newer Authum host is needed on the server.
 
 ## Build
 
