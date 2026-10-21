@@ -30,7 +30,7 @@ qproto_config_t g_qproto_config = {
     .cid_steam_pending = qproto_client_id_kind_steam_id_pending,
     .cid_steam = qproto_client_id_kind_real_steam,
 
-    .logging_sinks = authum_logger_sink_file,
+    .logging_sinks = authum_logger_sink_host,
     .logging_split = authum_logger_file_split_full,
 
     .rej_msg_unknown = "Client authorization failed.",
