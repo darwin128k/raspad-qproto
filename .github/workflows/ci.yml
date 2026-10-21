@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - 1.0.0
   workflow_dispatch:
 
 permissions:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   linux32:
-    name: Linux i386 Release
+    name: Linux i386 Metamod package
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -24,7 +24,7 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            gcc-multilib g++-multilib cmake ninja-build \
+            gcc-multilib g++-multilib cmake ninja-build zip \
             libc6-dev:i386 libstdc++-12-dev:i386
 
       - name: Configure
@@ -36,12 +36,30 @@ jobs:
       - name: Build
         run: cmake --build build -j"$(nproc)"
 
-      - name: Strip
-        run: strip --strip-unneeded build/qproto_i386.so
+      - name: Pack Metamod layout
+        run: |
+          strip --strip-unneeded build/qproto_i386.so
+          rm -rf dist && mkdir -p dist/addons/qproto
+          cp build/qproto_i386.so dist/addons/qproto/qproto_i386.so
+          cp qproto.cfg dist/addons/qproto/qproto.cfg
+          cp qproto_bans.cfg dist/addons/qproto/qproto_bans.cfg
+          cat > dist/addons/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir (cstrike/) so you get:
+
+            addons/qproto/qproto_i386.so
+            addons/qproto/qproto.cfg
+            addons/qproto/qproto_bans.cfg
+
+          In addons/metamod/plugins.ini add:
+            linux addons/qproto/qproto_i386.so
+          EOF
+          sed -i 's/^          //' dist/addons/qproto/INSTALL.txt
+          (cd dist && zip -r ../qproto-linux32-metamod.zip addons)
+          ls -la qproto-linux32-metamod.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qproto_i386.so
-          path: build/qproto_i386.so
+          name: qproto-linux32-metamod
+          path: qproto-linux32-metamod.zip
           if-no-files-found: error

@@ -3,12 +3,18 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - 'v1.*'
+      - 'v0.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag to attach the .so to (e.g. v1.0.0)'
+        description: 'Release tag (e.g. v1.0.1)'
         required: true
+        type: string
+      ref:
+        description: 'Git ref to build'
+        required: true
+        default: '1.0.0'
         type: string
 
 permissions:
@@ -16,21 +22,21 @@ permissions:
 
 jobs:
   linux32:
-    name: Build and publish Linux .so
+    name: Build and publish Metamod zip
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
-          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
 
       - name: Install i386 toolchain
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            gcc-multilib g++-multilib cmake ninja-build \
+            gcc-multilib g++-multilib cmake ninja-build zip \
             libc6-dev:i386 libstdc++-12-dev:i386
 
       - name: Configure
@@ -42,8 +48,25 @@ jobs:
       - name: Build
         run: cmake --build build -j"$(nproc)"
 
-      - name: Strip
-        run: strip --strip-unneeded build/qproto_i386.so
+      - name: Pack Metamod layout
+        run: |
+          strip --strip-unneeded build/qproto_i386.so
+          rm -rf dist && mkdir -p dist/addons/qproto
+          cp build/qproto_i386.so dist/addons/qproto/qproto_i386.so
+          cp qproto.cfg dist/addons/qproto/qproto.cfg
+          cp qproto_bans.cfg dist/addons/qproto/qproto_bans.cfg
+          cat > dist/addons/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir (cstrike/) so you get:
+
+            addons/qproto/qproto_i386.so
+            addons/qproto/qproto.cfg
+            addons/qproto/qproto_bans.cfg
+
+          In addons/metamod/plugins.ini add:
+            linux addons/qproto/qproto_i386.so
+          EOF
+          sed -i 's/^          //' dist/addons/qproto/INSTALL.txt
+          (cd dist && zip -r ../qproto-linux32-metamod.zip addons)
 
       - name: Resolve tag
         id: tag
@@ -60,5 +83,5 @@ jobs:
         run: |
           TAG="${{ steps.tag.outputs.name }}"
           gh release view "$TAG" >/dev/null 2>&1 || \
-            gh release create "$TAG" --title "$TAG" --notes "qproto $TAG (Linux i386 Metamod plugin)."
-          gh release upload "$TAG" build/qproto_i386.so --clobber
+            gh release create "$TAG" --title "$TAG" --notes "qproto $TAG — Linux i386 Metamod package (zip: addons/qproto/)."
+          gh release upload "$TAG" qproto-linux32-metamod.zip --clobber
