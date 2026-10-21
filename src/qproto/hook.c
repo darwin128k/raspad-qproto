@@ -38,29 +38,14 @@
 typedef int (*steam_notify_client_connect_fn)(void *client, char *auth_buf, int len);
 typedef char *(*cmd_argv_fn)(int);
 typedef char *(*info_value_for_key_fn)(char *, char *);
-typedef void (*sv_reject_connection_fn)(void *adr, const char *fmt, ...);
-
 static void *g_hook_target;
 static steam_notify_client_connect_fn g_real;
 static cmd_argv_fn g_cmd_argv;
 static info_value_for_key_fn g_info_value_for_key;
-static sv_reject_connection_fn g_sv_reject_connection;
 static unsigned char g_saved_bytes[5];
 static int g_installed;
 static uintptr_t g_network_userid_offset = 0x4a90;
-static uintptr_t g_remote_address_offset = 0x20;
 
-void
-qproto_hook_send_reject(void *client, const char *message)
-{
-    void *adr;
-    if (!g_sv_reject_connection)
-    {
-        return;
-    }
-    adr = (uint8_t *)client + g_remote_address_offset;
-    g_sv_reject_connection(adr, "%s\n", message);
-}
 
 void
 qproto_hook_patch_jmp(void *target, void *dest, unsigned char *save_back)
@@ -179,24 +164,6 @@ qproto_hook_is_numeric_auth_kind(qproto_client_auth_kind_t kind)
     }
 }
 
-const char *
-qproto_hook_reject_message(qproto_client_auth_kind_t kind)
-{
-    switch (kind)
-    {
-    case qproto_client_auth_kind_no_steam_47:
-    case qproto_client_auth_kind_no_steam_48:
-    case qproto_client_auth_kind_revemu:
-    case qproto_client_auth_kind_revemu_2013:
-    case qproto_client_auth_kind_steamclient_2009:
-    case qproto_client_auth_kind_old_revemu:
-    case qproto_client_auth_kind_setti:
-    case qproto_client_auth_kind_sxei:
-    case qproto_client_auth_kind_vellum:
-    case qproto_client_auth_kind_steam_pending:
-    default:
-    }
-}
 
 int
 qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
@@ -399,23 +366,19 @@ qproto_hook_install(void)
 
     layout = qproto_engine_select_layout(g_qproto_config.engine_layout, via_dynsym);
     g_network_userid_offset = layout->network_userid_offset;
-    g_remote_address_offset = layout->remote_address_offset;
     authum_logger_info(
         &g_qproto_logger,
-        "engine layout: %s (override=%s, viaDynsym=%d) network_userid=+0x%lx remote_address=+0x%lx",
+        "engine layout: %s (override=%s, viaDynsym=%d) network_userid=+0x%lx",
         layout->name, qproto_engine_layout_name(g_qproto_config.engine_layout), via_dynsym,
-        (unsigned long)g_network_userid_offset, (unsigned long)g_remote_address_offset);
+        (unsigned long)g_network_userid_offset);
 
     g_hook_target = sym;
     g_real = (steam_notify_client_connect_fn)sym;
 
     g_cmd_argv = (cmd_argv_fn)qproto_engine_resolve("Cmd_Argv", NULL);
     g_info_value_for_key = (info_value_for_key_fn)qproto_engine_resolve("Info_ValueForKey", NULL);
-    g_sv_reject_connection =
-        (sv_reject_connection_fn)qproto_engine_resolve("SV_RejectConnection", NULL);
-    authum_logger_info(&g_qproto_logger, "Cmd_Argv=%p Info_ValueForKey=%p SV_RejectConnection=%p",
-                       (void *)g_cmd_argv, (void *)g_info_value_for_key,
-                       (void *)g_sv_reject_connection);
+    authum_logger_info(&g_qproto_logger, "Cmd_Argv=%p Info_ValueForKey=%p",
+                       (void *)g_cmd_argv, (void *)g_info_value_for_key);
 
     qproto_hook_patch_jmp(g_hook_target, (void *)&qproto_steam_notify_client_connect_hook,
                           g_saved_bytes);
