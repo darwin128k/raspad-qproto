@@ -1,31 +1,80 @@
 name: Release
+
 on:
   push:
-    tags: ['v2.*']
+    tags:
+      - 'v2.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Existing tag (v2.x)'
-        required: false
+        description: 'Release tag (e.g. v2.0.0)'
+        required: true
+        type: string
+      ref:
+        description: 'Git ref to build'
+        required: true
+        default: '2.0.0'
+        type: string
+
+permissions:
+  contents: write
 
 jobs:
   release:
+    name: Build and publish Authum module zip
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+
       - name: Install i386 toolchain
         run: |
           sudo dpkg --add-architecture i386
           sudo apt-get update
-          sudo apt-get install -y g++-multilib ninja-build cmake libstdc++-12-dev:i386
+          sudo apt-get install -y --no-install-recommends \
+            gcc-multilib g++-multilib cmake ninja-build zip \
+            libc6-dev:i386 libstdc++-12-dev:i386
+
       - name: Build
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target qproto
+          cmake --build build --target qproto -j"$(nproc)"
+
+      - name: Pack Authum module layout
+        run: |
+          strip --strip-unneeded build/modules/qproto/qproto.so
+          rm -rf dist && mkdir -p dist/addons/authum/modules/qproto
+          cp build/modules/qproto/qproto.so dist/addons/authum/modules/qproto/qproto.so
+          cp qproto.cfg dist/addons/authum/modules/qproto/qproto.cfg
+          printf 'qproto\n' > dist/addons/authum/modules.list.example
+          cat > dist/addons/authum/modules/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir so paths match Authum:
+
+            addons/authum/modules/qproto/qproto.so
+            addons/authum/modules/qproto/qproto.cfg
+
+          Ensure Authum is installed, then add a line to addons/authum/modules.list:
+            qproto
+          EOF
+          sed -i 's/^          //' dist/addons/authum/modules/qproto/INSTALL.txt
+          (cd dist && zip -r ../qproto-linux32-authum.zip addons)
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload to release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: build/modules/qproto/qproto.so
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.name }}"
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --notes "qproto $TAG — Linux i386 Authum module package (zip: addons/authum/modules/qproto/)."
+          gh release upload "$TAG" qproto-linux32-authum.zip --clobber
