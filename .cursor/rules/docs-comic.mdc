@@ -1,0 +1,10 @@
+---
+description: Module docs — comic strips, not essays
+globs: docs/**/*.md
+alwaysApply: false
+---
+
+# Docs = comic for picture brains
+
+Same as Authum: young impatient audience, **panels + short captions**, not prose essays.
+snake_case cfg keys. Don’t add textbook markdown unsolicited.

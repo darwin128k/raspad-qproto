@@ -1,97 +1,89 @@
 cmake_minimum_required(VERSION 3.16)
-project(qproto CXX)
+project(qproto C)
 
-# qproto is a Metamod-P plugin for a 32-bit (i386) HLDS engine build - everything
-# here is built 32-bit regardless of host word size, hence -m32 on every target's
-# compile and link step below.
-#
-# gnu++17 (not plain c++17): lib/metamod-p/metamod/osdep.h keys off the GNU `linux`
-# macro, which strict ISO modes (-std=c++17) suppress and which is required to avoid
-# an `#error "OS unrecognized"` - see qproto_hook.cpp's header comment for the story.
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS ON)
+# Authum client module (ABI 0.3), pure C11. Metamod plugin build lives on branch 1.0.0 only.
+# No HLSDK / metamod-p here — engine + crypto go through Authum host facades.
 
-option(QPROTO_BUILD_TESTS "Build the standalone self-tests (crypto, authorizers, hook mechanism)" ON)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS ON)
 
-# Path to a real engine_i486.so to run hook_patch_selftest against (optional - that
-# test is skipped from `ctest` if this isn't set). Never ship/commit an actual copy
-# of the engine binary; point this at wherever your server checkout lives, e.g.:
-#   cmake -B build -DQPROTO_TEST_ENGINE_PATH=/path/to/server/engine_i486.so
-set(QPROTO_TEST_ENGINE_PATH "" CACHE FILEPATH "Path to engine_i486.so for hook_patch_selftest")
+set(AUTHUM_DIR "${CMAKE_SOURCE_DIR}/lib/authum")
+if (NOT EXISTS "${AUTHUM_DIR}/client/CMakeLists.txt")
+    message(FATAL_ERROR
+            "lib/authum missing — run: git submodule update --init --recursive lib/authum")
+endif ()
 
-# lib/metamod-p is the Bots-United/metamod-p submodule, pinned to tag v1.21p37 (the
-# exact Metamod build installed on the server) - its own hlsdk/ subdirectory carries
-# the matching HLSDK headers, so there's no separate HLSDK dependency to track.
-set(METAMOD_P_DIR ${CMAKE_SOURCE_DIR}/lib/metamod-p)
-set(DEP_METAMOD ${METAMOD_P_DIR}/metamod)
-set(DEP_HLSDK   ${METAMOD_P_DIR}/hlsdk)
-set(QPROTO_M32_FLAGS -m32)
+add_subdirectory(lib/authum/client)
 
-if(NOT EXISTS ${DEP_METAMOD}/meta_api.h)
-	message(FATAL_ERROR "lib/metamod-p submodule is missing/empty - run: git submodule update --init --recursive")
-endif()
-
-# ============================================================================
-# Main plugin: cstrike/addons/qproto/qproto_i386.so
-# ============================================================================
-
-add_library(qproto SHARED
-	src/qproto/h_export.cpp
-	src/qproto/meta_api.cpp
-	src/qproto/dllapi.cpp
-	src/qproto/qproto_metamod_compat.cpp
-	src/qproto/qproto_hook.cpp
-	src/qproto/qproto_engine.cpp
-	src/qproto/qproto_log.cpp
-	src/qproto/qproto_cfg.cpp
-	src/qproto/qproto_paths.cpp
-	src/qproto/qproto_authorizers.cpp
-	src/qproto/qproto_utils.cpp
-	src/qproto/qproto_bans.cpp
-	src/qproto/qproto_client_state.cpp
-	src/qproto/qproto_api.cpp
-	src/qproto/Rijndael.cpp
-	src/qproto/sha2.cpp
-	${DEP_METAMOD}/sdk_util.cpp
+# Engine-independent logic, shared by the module and the tests.
+add_library(qproto_core STATIC
+        src/qproto/client/auth/kind.c
+        src/qproto/client/state.c
+        src/qproto/client/long_authid.c
+        src/qproto/command.c
+        src/qproto/authorizers.c
+        src/qproto/utils.c
 )
+target_include_directories(qproto_core PUBLIC "${CMAKE_SOURCE_DIR}/include")
+target_link_libraries(qproto_core PUBLIC authum_client)
+set_target_properties(qproto_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
+if (NOT MSVC)
+    target_compile_options(qproto_core PRIVATE -m32 -fvisibility=hidden -Wall
+            -ffunction-sections -fdata-sections)
+endif ()
 
-# "include" (not "include/qproto") - our own code says #include "qproto/foo.h", so
-# the qproto/ path segment must come from the directory name, not the include root.
-target_include_directories(qproto PRIVATE
-	include
-	${DEP_METAMOD}
-	${DEP_HLSDK}/dlls
-	${DEP_HLSDK}/engine
-	${DEP_HLSDK}/common
-	${DEP_HLSDK}/pm_shared
+add_library(qproto MODULE
+        src/authum/info.c
+        src/authum/module.c
+        src/authum/bridge.c
+        src/qproto/hook.c
+        src/qproto/engine.c
+        src/qproto/config.c
+        src/qproto/events.c
+        src/qproto/logger.c
 )
-
-# -fpermissive: the vendored HLSDK/Metamod-P headers predate strict C++17 (implicit
-# int, old-style casts flagged as errors otherwise, etc.) - same as every other
-# HLSDK-based mod's build.
-target_compile_options(qproto PRIVATE ${QPROTO_M32_FLAGS} -fpermissive -Wall)
-
-# -static-libgcc/-static-libstdc++: the server's own bundled (ancient) libstdc++.so.6
-# sits earlier in LD_LIBRARY_PATH than the system one and lacks the CXXABI symbols a
-# modern compiler emits, which makes Metamod's dlopen() of the plugin fail *silently*
-# (no console error at all - see the qproto.log debugging session that found this).
-# Statically linking sidesteps needing the host's C++ runtime version at all.
-target_link_options(qproto PRIVATE ${QPROTO_M32_FLAGS} -static-libgcc -static-libstdc++)
-target_link_libraries(qproto PRIVATE dl)
 
 set_target_properties(qproto PROPERTIES
-	PREFIX ""
-	OUTPUT_NAME "qproto_i386"
-	SUFFIX ".so"
-	POSITION_INDEPENDENT_CODE ON
+        PREFIX ""
+        OUTPUT_NAME "qproto"
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules/qproto"
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/modules/qproto"
 )
 
-# ============================================================================
-# Self-tests - see tests/CMakeLists.txt
-# ============================================================================
+target_include_directories(qproto PRIVATE
+        "${CMAKE_SOURCE_DIR}/include"
+)
 
-if(QPROTO_BUILD_TESTS)
-	enable_testing()
-	add_subdirectory(tests)
-endif()
+target_compile_definitions(qproto PRIVATE linux LINUX)
+
+if (NOT MSVC)
+    target_compile_options(qproto PRIVATE
+            -m32
+            -fvisibility=hidden
+            -Wall
+            -ffunction-sections
+            -fdata-sections
+    )
+    target_link_options(qproto PRIVATE
+            -m32
+            -static-libgcc
+            "LINKER:--gc-sections"
+    )
+endif ()
+
+target_link_libraries(qproto PRIVATE qproto_core authum_client dl m)
+
+option(QPROTO_BUILD_TESTS "Build qproto tests (ctest)" ON)
+if (QPROTO_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif ()
+
+if (CMAKE_BUILD_TYPE STREQUAL "Release" OR CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+    if (CMAKE_STRIP)
+        add_custom_command(TARGET qproto POST_BUILD
+                COMMAND ${CMAKE_STRIP} --strip-unneeded "$<TARGET_FILE:qproto>"
+                COMMENT "strip qproto.so")
+    endif ()
+endif ()

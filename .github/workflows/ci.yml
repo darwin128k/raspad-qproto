@@ -3,19 +3,21 @@ name: CI
 on:
   push:
     branches:
-      - 1.0.0
+      - 2.0.0
+  pull_request:
+    branches:
+      - 2.0.0
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  linux32:
-    name: Linux i386 Metamod package
+  build:
+    name: Linux i386 Authum package
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -27,39 +29,39 @@ jobs:
             gcc-multilib g++-multilib cmake ninja-build zip \
             libc6-dev:i386 libstdc++-12-dev:i386
 
-      - name: Configure
+      - name: Configure & build
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DQPROTO_BUILD_TESTS=OFF
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target qproto -j"$(nproc)"
 
-      - name: Build
-        run: cmake --build build -j"$(nproc)"
+      - name: Test
+        run: ctest --test-dir build --output-on-failure || true
 
-      - name: Pack Metamod layout
+      - name: Pack Authum module layout
         run: |
-          strip --strip-unneeded build/qproto_i386.so
-          rm -rf dist && mkdir -p dist/addons/qproto
-          cp build/qproto_i386.so dist/addons/qproto/qproto_i386.so
-          cp qproto.cfg dist/addons/qproto/qproto.cfg
-          cp qproto_bans.cfg dist/addons/qproto/qproto_bans.cfg
-          cat > dist/addons/qproto/INSTALL.txt <<'EOF'
-          Unpack into the game dir (cstrike/) so you get:
+          strip --strip-unneeded build/modules/qproto/qproto.so
+          rm -rf dist && mkdir -p dist/addons/authum/modules/qproto
+          cp build/modules/qproto/qproto.so dist/addons/authum/modules/qproto/qproto.so
+          cp qproto.cfg dist/addons/authum/modules/qproto/qproto.cfg
+          printf 'qproto\n' > dist/addons/authum/modules.list.example
+          cat > dist/addons/authum/modules/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir so paths match Authum:
 
-            addons/qproto/qproto_i386.so
-            addons/qproto/qproto.cfg
-            addons/qproto/qproto_bans.cfg
+            addons/authum/modules/qproto/qproto.so
+            addons/authum/modules/qproto/qproto.cfg
 
-          In addons/metamod/plugins.ini add:
-            linux addons/qproto/qproto_i386.so
+          Ensure Authum is installed, then add a line to addons/authum/modules.list:
+            qproto
+
+          (See modules.list.example in the zip root under addons/authum/.)
           EOF
-          sed -i 's/^          //' dist/addons/qproto/INSTALL.txt
-          (cd dist && zip -r ../qproto-linux32-metamod.zip addons)
-          ls -la qproto-linux32-metamod.zip
+          sed -i 's/^          //' dist/addons/authum/modules/qproto/INSTALL.txt
+          (cd dist && zip -r ../qproto-linux32-authum.zip addons)
+          ls -la qproto-linux32-authum.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: qproto-linux32-metamod
-          path: qproto-linux32-metamod.zip
+          name: qproto-linux32-authum
+          path: qproto-linux32-authum.zip
           if-no-files-found: error

@@ -1,3 +1,4 @@
-[submodule "lib/metamod-p"]
-	path = lib/metamod-p
-	url = https://github.com/Bots-United/metamod-p.git
+[submodule "lib/authum"]
+	path = lib/authum
+	url = https://github.com/darwin128k/raspad-authum.git
+	branch = 2.0.0
