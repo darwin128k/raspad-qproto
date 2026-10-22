@@ -5,3 +5,8 @@ build_*/
 
 build-linux*/
 build*/
+
+/lib/metamod-p/
+/_snake_rename.py
+/build*/
+

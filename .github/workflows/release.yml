@@ -3,30 +3,28 @@ name: Release
 on:
   push:
     tags:
-      - 'v1.*'
-      - 'v0.*'
+      - 'v2.*'
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release tag (e.g. v1.0.1)'
+        description: 'Release tag (e.g. v2.0.0)'
         required: true
         type: string
       ref:
         description: 'Git ref to build'
         required: true
-        default: '1.0.0'
+        default: '2.0.0'
         type: string
 
 permissions:
   contents: write
 
 jobs:
-  linux32:
-    name: Build and publish Metamod zip
+  release:
+    name: Build and publish Authum module zip
     runs-on: ubuntu-22.04
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
@@ -39,34 +37,29 @@ jobs:
             gcc-multilib g++-multilib cmake ninja-build zip \
             libc6-dev:i386 libstdc++-12-dev:i386
 
-      - name: Configure
-        run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DQPROTO_BUILD_TESTS=OFF
-
       - name: Build
-        run: cmake --build build -j"$(nproc)"
-
-      - name: Pack Metamod layout
         run: |
-          strip --strip-unneeded build/qproto_i386.so
-          rm -rf dist && mkdir -p dist/addons/qproto
-          cp build/qproto_i386.so dist/addons/qproto/qproto_i386.so
-          cp qproto.cfg dist/addons/qproto/qproto.cfg
-          cp qproto_bans.cfg dist/addons/qproto/qproto_bans.cfg
-          cat > dist/addons/qproto/INSTALL.txt <<'EOF'
-          Unpack into the game dir (cstrike/) so you get:
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target qproto -j"$(nproc)"
 
-            addons/qproto/qproto_i386.so
-            addons/qproto/qproto.cfg
-            addons/qproto/qproto_bans.cfg
+      - name: Pack Authum module layout
+        run: |
+          strip --strip-unneeded build/modules/qproto/qproto.so
+          rm -rf dist && mkdir -p dist/addons/authum/modules/qproto
+          cp build/modules/qproto/qproto.so dist/addons/authum/modules/qproto/qproto.so
+          cp qproto.cfg dist/addons/authum/modules/qproto/qproto.cfg
+          printf 'qproto\n' > dist/addons/authum/modules.list.example
+          cat > dist/addons/authum/modules/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir so paths match Authum:
 
-          In addons/metamod/plugins.ini add:
-            linux addons/qproto/qproto_i386.so
+            addons/authum/modules/qproto/qproto.so
+            addons/authum/modules/qproto/qproto.cfg
+
+          Ensure Authum is installed, then add a line to addons/authum/modules.list:
+            qproto
           EOF
-          sed -i 's/^          //' dist/addons/qproto/INSTALL.txt
-          (cd dist && zip -r ../qproto-linux32-metamod.zip addons)
+          sed -i 's/^          //' dist/addons/authum/modules/qproto/INSTALL.txt
+          (cd dist && zip -r ../qproto-linux32-authum.zip addons)
 
       - name: Resolve tag
         id: tag
@@ -84,12 +77,13 @@ jobs:
           TAG="${{ steps.tag.outputs.name }}"
           NOTES=$(mktemp)
           python3 scripts/release_notes.py --tag "$TAG" \
-            --package "Download **\`qproto-linux32-metamod.zip\`** and unpack → \`addons/qproto/\`." \
-            --highlight "Metamod plugin zip: .so + qproto.cfg + qproto_bans.cfg" \
+            --package "Download **`qproto-linux32-authum.zip`** and unpack → `addons/authum/modules/qproto/`." \
+            --highlight "Authum client module (needs Authum host)" \
+            --highlight "Pure C11; events + authum qproto info"
             > "$NOTES"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --title "$TAG" --notes-file "$NOTES"
           else
             gh release edit "$TAG" --notes-file "$NOTES"
           fi
-          gh release upload "$TAG" qproto-linux32-metamod.zip --clobber
+          gh release upload "$TAG" qproto-linux32-authum.zip --clobber
