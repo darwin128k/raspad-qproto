@@ -26,9 +26,9 @@ typedef struct qproto_engine_layout_info
 } qproto_engine_layout_info_t;
 
 /*
- * Resolve a symbol inside the already-loaded engine_i486.so.
- * Tries dlsym (dynsym) first; on failure walks the on-disk ELF .symtab so local
- * symbols (build 10211) still resolve. Sets *out_via_dynsym when non-null.
+ * Resolve a symbol inside the already-loaded engine_i486.so through
+ * authum_symbol_find_engine (dlsym, then the on-disk .symtab for build 10211's
+ * locals) and log where it came from. Sets *out_via_dynsym when non-null.
  */
 void *
 qproto_engine_resolve(const char *symbol, int *out_via_dynsym);

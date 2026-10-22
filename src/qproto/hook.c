@@ -20,8 +20,6 @@
  * network_userid and tell SV_ConnectClient the connection is fine after all.
  */
 
-#include <dlfcn.h>
-#include <sys/mman.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -37,49 +35,18 @@
 #include <qproto/engine.h>
 #include <qproto/vellum/address.h>
 
+#include <authum/detour.h>
+
 typedef int (*steam_notify_client_connect_fn)(void *client, char *auth_buf, int len);
 typedef char *(*cmd_argv_fn)(int);
 typedef char *(*info_value_for_key_fn)(char *, char *);
 typedef char *(*cvar_variable_string_fn)(const char *);
-static void *g_hook_target;
+static authum_detour_t g_detour;
 static steam_notify_client_connect_fn g_real;
 static cmd_argv_fn g_cmd_argv;
 static info_value_for_key_fn g_info_value_for_key;
 static cvar_variable_string_fn g_cvar_variable_string;
-static unsigned char g_saved_bytes[5];
-static int g_installed;
 static uintptr_t g_network_userid_offset = 0x4a90;
-
-
-void
-qproto_hook_patch_jmp(void *target, void *dest, unsigned char *save_back)
-{
-    uintptr_t page = (uintptr_t)target & ~(uintptr_t)0xFFF;
-    size_t len = ((uintptr_t)target + 5) - page;
-    unsigned char *t;
-    int32_t rel;
-
-    mprotect((void *)page, len, PROT_READ | PROT_WRITE | PROT_EXEC);
-
-    if (save_back)
-    {
-        memcpy(save_back, target, 5);
-    }
-
-    t = (unsigned char *)target;
-    rel = (int32_t)((uintptr_t)dest - (uintptr_t)target - 5);
-    t[0] = 0xE9;
-    memcpy(t + 1, &rel, 4);
-}
-
-void
-qproto_hook_restore_bytes(void *target, const unsigned char *saved)
-{
-    uintptr_t page = (uintptr_t)target & ~(uintptr_t)0xFFF;
-    size_t len = ((uintptr_t)target + 5) - page;
-    mprotect((void *)page, len, PROT_READ | PROT_WRITE | PROT_EXEC);
-    memcpy(target, saved, 5);
-}
 
 /* AUTH_IDTYPE from engine's userid.h: STEAM=1, VALVE=2, LOCAL=3. */
 enum
@@ -260,9 +227,9 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
         }
     }
 
-    qproto_hook_restore_bytes(g_hook_target, g_saved_bytes);
+    authum_detour_suspend(&g_detour);
     result = g_real(client, auth_buf, len);
-    qproto_hook_patch_jmp(g_hook_target, (void *)&qproto_steam_notify_client_connect_hook, NULL);
+    authum_detour_resume(&g_detour);
 
     authum_logger_info(&g_qproto_logger, "native Steam_NotifyClientConnect returned %d", result);
 
@@ -408,7 +375,7 @@ qproto_hook_install(void)
     void *sym;
     const qproto_engine_layout_info_t *layout;
 
-    if (g_installed)
+    if (g_detour.attached)
     {
         return 1;
     }
@@ -428,7 +395,6 @@ qproto_hook_install(void)
         layout->name, qproto_engine_layout_name(g_qproto_config.engine_layout), via_dynsym,
         (unsigned long)g_network_userid_offset);
 
-    g_hook_target = sym;
     g_real = (steam_notify_client_connect_fn)sym;
 
     g_cmd_argv = (cmd_argv_fn)qproto_engine_resolve("Cmd_Argv", NULL);
@@ -445,22 +411,22 @@ qproto_hook_install(void)
                            "server; set vellum_server_ip in qproto.cfg");
     }
 
-    qproto_hook_patch_jmp(g_hook_target, (void *)&qproto_steam_notify_client_connect_hook,
-                          g_saved_bytes);
-    g_installed = 1;
-    authum_logger_info(&g_qproto_logger, "hook installed on Steam_NotifyClientConnect @ %p",
-                       g_hook_target);
+    if (!authum_detour_attach(&g_detour, sym, (authum_ptr)&qproto_steam_notify_client_connect_hook))
+    {
+        authum_logger_info(&g_qproto_logger, "detour on Steam_NotifyClientConnect FAILED");
+        return 0;
+    }
+    authum_logger_info(&g_qproto_logger, "hook installed on Steam_NotifyClientConnect @ %p", sym);
     return 1;
 }
 
 void
 qproto_hook_remove(void)
 {
-    if (!g_installed)
+    if (!g_detour.attached)
     {
         return;
     }
-    qproto_hook_restore_bytes(g_hook_target, g_saved_bytes);
-    g_installed = 0;
+    authum_detour_detach(&g_detour);
     authum_logger_info(&g_qproto_logger, "hook removed, original bytes restored");
 }
