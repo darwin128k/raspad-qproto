@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - First key seen for a Vellum SteamID is pinned in `vellum_keys.txt` (module
   dir); a different key for that SteamID is refused.
 - Vellum auth key (ban / long authid source) is now the 32-byte public key.
+- Engine symbol lookup (`dlsym`, then the on-disk `.symtab`) and the
+  `Steam_NotifyClientConnect` detour now come from Authum
+  (`<authum/symbol.h>`, `<authum/detour.h>`), shared with other modules that
+  hook the engine. qproto's own copies are gone; behaviour is unchanged.
 
 ### Added
 
