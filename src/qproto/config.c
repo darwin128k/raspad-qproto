@@ -84,7 +84,7 @@ qproto_config_load(void)
     authum_char_t server_ips[128];
     authum_i32_t cid_steam;
 
-    /* configs/qproto.cfg; the old modules/qproto/ copy still works. */
+    /* addons/authum/configs/qproto.cfg */
     if (!authum_host_config_path(&g_qproto_host, "qproto.cfg", &path) ||
         !authum_cfg_open(&cfg, &path))
     {
