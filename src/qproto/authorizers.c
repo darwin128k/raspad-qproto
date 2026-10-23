@@ -2,10 +2,13 @@
 #include <qproto/utils.h>
 #include <qproto/mini/steamid.h>
 #include <qproto/config.h>
+#include <qproto/vellum/keystore.h>
 #include <qproto/vellum/ticket.h>
 #include <qproto/host.h>
 #include <authum/crypto.h>
+#include <authum/crypto/ed25519.h>
 #include <authum/null.h>
+#include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -513,30 +516,113 @@ qproto_sxei_authorize(qproto_authdata_t *authdata)
     return qproto_client_auth_kind_sxei;
 }
 
+static qproto_client_auth_kind_t
+vellum_reject(qproto_authdata_t *authdata, const char *fmt, ...)
+{
+    va_list args;
+
+    authdata->rejected = authum_bool_true;
+    va_start(args, fmt);
+    vsnprintf(authdata->reject_reason, sizeof authdata->reject_reason, fmt, args);
+    va_end(args);
+    return qproto_client_auth_kind_unknown;
+}
+
+static authum_bool_t
+vellum_server_ip_ok(const qproto_authdata_t *authdata, authum_u32_t ip)
+{
+    authum_usize_t i;
+
+    if (authdata->server_ip_count == 0u || authum_null_eq(authdata->server_ips))
+    {
+        return authum_bool_true;
+    }
+    for (i = 0u; i < authdata->server_ip_count; ++i)
+    {
+        if (authdata->server_ips[i] == ip)
+        {
+            return authum_bool_true;
+        }
+    }
+    return authum_bool_false;
+}
+
 qproto_client_auth_kind_t
 qproto_vellum_authorize(qproto_authdata_t *authdata)
 {
-    const vellum_ticket_t *ticket;
+    vellum_ticket_t ticket;
+    authum_i64_t skew;
+    authum_u32_t account_id;
 
-    if (authdata->ticket_len != sizeof(vellum_ticket_t))
+    if (vellum_ticket_is_v1(authdata->auth_ticket, authdata->ticket_len))
+    {
+        return vellum_reject(authdata,
+                             "Vellum v1 ticket (old raspad-revloader, unsigned) - client must update");
+    }
+    if (!vellum_ticket_is_vellum(authdata->auth_ticket, authdata->ticket_len))
     {
         return qproto_client_auth_kind_unknown;
     }
 
-    ticket = (const vellum_ticket_t *)authdata->auth_ticket;
-    if (!vellum_ticket_valid(ticket, authdata->ticket_len))
+    /* Engine buffer may be unaligned — work on a copy. */
+    memcpy(&ticket, authdata->auth_ticket, sizeof ticket);
+    if (!vellum_ticket_header_ok(&ticket))
     {
-        return qproto_client_auth_kind_unknown;
+        return vellum_reject(authdata, "Vellum ticket malformed (version=%u flags=%u)",
+                             (unsigned)ticket.version, (unsigned)ticket.flags);
+    }
+    if (!authum_crypto_ed25519_check(ticket.signature, ticket.public_key,
+                                     (const authum_byte_t *)&ticket,
+                                     (authum_usize_t)VELLUM_TICKET_SIGNED_SIZE))
+    {
+        return vellum_reject(authdata, "Vellum signature invalid");
+    }
+    if (authdata->server_port != 0u && ticket.server_port != authdata->server_port)
+    {
+        return vellum_reject(authdata, "Vellum ticket is for port %u, this server is %u",
+                             (unsigned)ticket.server_port, (unsigned)authdata->server_port);
+    }
+    if (!vellum_server_ip_ok(authdata, ticket.server_ip))
+    {
+        return vellum_reject(authdata, "Vellum ticket is for %u.%u.%u.%u, not this server",
+                             (unsigned)(ticket.server_ip >> 24) & 0xFFu,
+                             (unsigned)(ticket.server_ip >> 16) & 0xFFu,
+                             (unsigned)(ticket.server_ip >> 8) & 0xFFu,
+                             (unsigned)ticket.server_ip & 0xFFu);
+    }
+    if (authdata->now != 0)
+    {
+        skew = authdata->now - (authum_i64_t)ticket.timestamp;
+        if (skew < 0)
+        {
+            skew = -skew;
+        }
+        if (skew > (authum_i64_t)g_qproto_config.vellum_max_clock_skew)
+        {
+            return vellum_reject(authdata,
+                                 "Vellum ticket time is %llds off this server's clock (limit %us)",
+                                 (long long)skew, (unsigned)g_qproto_config.vellum_max_clock_skew);
+        }
     }
 
-    authdata->steam_id = ticket->account_id;
+    account_id = vellum_account_id_from_key(ticket.public_key);
+    switch (qproto_vellum_keystore_bind(account_id, ticket.public_key))
+    {
+    case qproto_vellum_bind_known:
+    case qproto_vellum_bind_new:
+    case qproto_vellum_bind_new_unsaved:
+        break;
+    case qproto_vellum_bind_conflict:
+        return vellum_reject(authdata, "Vellum account %u is pinned to another key",
+                             (unsigned)account_id);
+    default:
+        return vellum_reject(authdata, "Vellum key store error");
+    }
+
+    authdata->steam_id = account_id;
     authdata->auth_key_kind = qproto_auth_key_kind_other;
-    authdata->auth_key_len = ticket->ident_len;
-    if (authdata->auth_key_len > QPROTO_MAX_AUTHKEY_LEN)
-    {
-        authdata->auth_key_len = QPROTO_MAX_AUTHKEY_LEN;
-    }
-    memcpy(authdata->auth_key, ticket->ident, authdata->auth_key_len);
+    authdata->auth_key_len = VELLUM_PUBLIC_KEY_SIZE;
+    memcpy(authdata->auth_key, ticket.public_key, VELLUM_PUBLIC_KEY_SIZE);
     authdata->auth_key[authdata->auth_key_len] = '\0';
     return qproto_client_auth_kind_vellum;
 }
@@ -564,7 +650,8 @@ qproto_authorize_client(qproto_authdata_t *authdata, authum_bool_t sc2009_rev_co
     }
 
     if (g_qproto_config.enable_vellum &&
-        (r = qproto_vellum_authorize(authdata)) != qproto_client_auth_kind_unknown)
+        ((r = qproto_vellum_authorize(authdata)) != qproto_client_auth_kind_unknown ||
+         authdata->rejected))
     {
         return r;
     }

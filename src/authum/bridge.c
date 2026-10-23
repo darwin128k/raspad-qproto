@@ -7,15 +7,19 @@
 #include <qproto/hook.h>
 #include <qproto/host.h>
 #include <qproto/logger.h>
+#include <qproto/vellum/keystore.h>
 
 #include <authum/host.h>
 #include <authum/null.h>
+#include <authum/path.h>
 
 authum_host_t g_qproto_host;
 
 authum_bool_t
 qproto_authum_start(authum_host_t *host)
 {
+    authum_path_t keys_path;
+
     if (authum_null_eq(host))
     {
         return authum_bool_false;
@@ -44,6 +48,20 @@ qproto_authum_start(authum_host_t *host)
     authum_logger_info(&g_qproto_logger, "start — module dir: %s",
                        authum_path_as_cstr(authum_host_env_module(&g_qproto_host)));
 
+    /* Vellum SteamID -> key pins; without the file they only live until stop. */
+    if (authum_path_join(&keys_path, authum_host_env_module(&g_qproto_host), "vellum_keys.txt") &&
+        qproto_vellum_keystore_open(authum_path_as_cstr(&keys_path)))
+    {
+        authum_logger_info(&g_qproto_logger, "Vellum key pins: %u loaded from %s",
+                           (unsigned)qproto_vellum_keystore_count(),
+                           authum_path_as_cstr(&keys_path));
+    }
+    else
+    {
+        qproto_vellum_keystore_open(authum_null);
+        authum_logger_error(&g_qproto_logger, "Vellum key pins: file unusable - memory only");
+    }
+
     if (!qproto_client_state_start(authum_host_sandbox(&g_qproto_host)) || !qproto_events_start() ||
         !qproto_command_start(&g_qproto_host))
     {
@@ -69,6 +87,7 @@ qproto_authum_stop(void)
 {
     qproto_hook_remove();
     qproto_client_state_stop();
+    qproto_vellum_keystore_close();
     authum_logger_info(&g_qproto_logger, "stop — hook removed");
     qproto_logger_stop();
     authum_host_clear(&g_qproto_host);

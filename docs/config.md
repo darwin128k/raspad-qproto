@@ -16,6 +16,7 @@ Authum docs for the general mechanism: [`lib/authum/docs/cfg.md`](../lib/authum/
 cstrike/addons/authum/modules/qproto/
   qproto.so
   qproto.cfg          ← loaded here
+  vellum_keys.txt     ← Vellum SteamID → public key pins (written by qproto)
   qproto.log          ← only if logging_mode includes file bit (2); default is authum.log
 ```
 
@@ -55,6 +56,15 @@ See comments / examples in `qproto.cfg`. Groups:
 | Logging | `logging_split` | custom: `full` \| `session` |
 | Engine | `engine_layout` | custom string parse |
 | Steam cid | `cid_steam` | custom validated i32 |
+| Vellum | `vellum_server_ip` | custom: comma list of IPv4 → `vellum_server_ips[]` |
+| Vellum | `vellum_max_clock_skew` | u32 seconds (default 86400) |
+
+Vellum v2 tickets are signed for the address the player dialled. qproto checks
+the port against the engine (`ip_hostport` → `hostport` → `port` cvars) and the
+IP against `vellum_server_ip`, or the `ip` cvar when that key is empty. Without
+either, only the port is checked — set `vellum_server_ip` on public servers,
+especially behind NAT. `vellum_keys.txt` is append-only: delete a line to
+release a SteamID (e.g. a player who lost their key file).
 
 `logging_mode`: `4` = authum.log (host) only (default), `2` = private file, `6` = both
 (default in code is file-only).
