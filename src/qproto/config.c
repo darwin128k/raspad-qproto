@@ -84,7 +84,8 @@ qproto_config_load(void)
     authum_char_t server_ips[128];
     authum_i32_t cid_steam;
 
-    if (!authum_path_join(&path, authum_host_env_module(&g_qproto_host), "qproto.cfg") ||
+    /* configs/qproto.cfg; the old modules/qproto/ copy still works. */
+    if (!authum_host_config_path(&g_qproto_host, "qproto.cfg", &path) ||
         !authum_cfg_open(&cfg, &path))
     {
         authum_logger_info(&g_qproto_logger, "qproto.cfg not found - using defaults");
