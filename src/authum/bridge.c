@@ -46,7 +46,7 @@ qproto_authum_start(authum_host_t *host)
                        authum_path_as_cstr(authum_host_env_module_data(&g_qproto_host)));
 
     /* Vellum SteamID -> key pins; without the file they only live until stop. */
-    /* data/qproto/vellum_keys.txt: written by qproto, moved there from the old folder. */
+    /* addons/authum/data/qproto/vellum_keys.txt: written by qproto. */
     if (authum_host_data_path(&g_qproto_host, "vellum_keys.txt", &keys_path) &&
         qproto_vellum_keystore_open(authum_path_as_cstr(&keys_path)))
     {
