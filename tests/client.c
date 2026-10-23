@@ -38,6 +38,7 @@ fake_sandbox_alloc(authum_ptr parent, authum_usize_t size)
 }
 
 const authum_sandbox_ops_t g_fake_sandbox_ops = {
+    .size = sizeof(authum_sandbox_ops_t),
     .alloc = fake_sandbox_alloc,
 };
 
@@ -151,6 +152,7 @@ test_long_authid(void)
     qproto_client_info_t b;
 
     memset(&crypto, 0, sizeof crypto);
+    crypto.size = sizeof crypto;
     crypto.sha_hash = fake_sha_hash;
 
     memset(&a, 0, sizeof a);
@@ -210,7 +212,8 @@ void
 test_command_info(void)
 {
     authum_sandbox_t sb = {&g_fake_sandbox_ops, (authum_ptr)&sb};
-    const authum_commands_ops_t ops = {.add = fake_command_add};
+    const authum_commands_ops_t ops = {.size = sizeof(authum_commands_ops_t),
+                                       .add = fake_command_add};
     authum_commands_t commands = {&ops, authum_null, "qproto"};
     authum_host_t host;
     qproto_client_info_t pending;
@@ -223,6 +226,7 @@ test_command_info(void)
     const authum_char_t *too_many[] = {"a", "b"};
 
     memset(&host, 0, sizeof host);
+    host.size = sizeof host;
     authum_host_set_commands(&host, &commands);
     g_added = 0u;
     CHECK(qproto_command_start(&host));

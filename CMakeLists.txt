@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(qproto C)
 
-# Authum client module (ABI 0.3), pure C11. Metamod plugin build lives on branch 1.0.0 only.
+# Authum client module (ABI 1.0), pure C11. Metamod plugin build lives on branch 1.0.0 only.
 # No HLSDK / metamod-p here — engine + crypto go through Authum host facades.
 
 set(CMAKE_C_STANDARD 11)

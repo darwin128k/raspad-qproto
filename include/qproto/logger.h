@@ -3,11 +3,14 @@
 
 #include <authum/logger.h>
 
-/* Module-owned Authum logger. logging_mode cfg bits == authum_logger_sink_*. */
+/*
+ * Module-owned Authum logger. Where lines go (logs/qproto/, authum.log, the
+ * console) and at which level is set in addons/authum/authum.cfg, not here.
+ */
 extern authum_logger_t g_qproto_logger;
 
 void
-qproto_logger_start(const authum_host_t *host, authum_logger_sink_t sinks);
+qproto_logger_start(const authum_host_t *host);
 void
 qproto_logger_stop(void);
 

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Built on Authum 3.0.0 (module ABI 1.0.0); `lib/authum` tracks branch
+  `3.0.0`. Needs `authum_mm` 3.0.0 — older hosts refuse the module.
+- Logging is Authum's: lines go to `addons/authum/logs/qproto/YYYY-MM-DD.log`,
+  warnings and errors also to `logs/authum/`, levels in
+  `addons/authum/authum.cfg` (`log_level`, `log_console`,
+  `qproto.log_level`). `logging_mode` and `logging_split` are no longer read
+  from `qproto.cfg`.
+- The host is kept with `authum_host_copy`.
+
+### Changed
+
 - **Vellum v2 (breaking for raspad-revloader clients).** The ticket is now a
   120-byte Ed25519-signed blob: the player's key pair lives in their user
   profile, the signature covers the server address they dialled and their
