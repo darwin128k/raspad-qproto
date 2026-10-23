@@ -25,10 +25,8 @@ qproto_authum_start(authum_host_t *host)
         return authum_bool_false;
     }
 
-    g_qproto_host = *host;
-
-    /* Host sink only until cfg loads logging_mode. */
-    authum_logger_init(&g_qproto_logger, &g_qproto_host, authum_logger_sink_host, "qproto");
+    authum_host_copy(&g_qproto_host, host);
+    qproto_logger_start(&g_qproto_host);
 
     if (authum_null_eq(authum_host_crypto(&g_qproto_host)) ||
         authum_null_eq(authum_host_engine(&g_qproto_host)) ||
@@ -44,7 +42,6 @@ qproto_authum_start(authum_host_t *host)
     }
 
     qproto_config_load();
-    qproto_logger_start(&g_qproto_host, g_qproto_config.logging_sinks);
     authum_logger_info(&g_qproto_logger, "start — module dir: %s",
                        authum_path_as_cstr(authum_host_env_module(&g_qproto_host)));
 

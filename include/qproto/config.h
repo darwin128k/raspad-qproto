@@ -4,8 +4,6 @@
 #include <authum/bool.h>
 #include <authum/byte.h>
 #include <authum/char.h>
-#include <authum/logger/file/split.h>
-#include <authum/logger/sink.h>
 
 #include <qproto/engine.h>
 #include <qproto/shared.h>
@@ -49,9 +47,6 @@ struct qproto_config
     /** Max |server clock - ticket clock|, seconds. */
     authum_u32_t vellum_max_clock_skew;
 
-    authum_logger_sink_t logging_sinks;
-    /** File layout when the file bit is set — Authum `full` / `session`. */
-    authum_logger_file_split_t logging_split;
 };
 typedef struct qproto_config qproto_config_t;
 
