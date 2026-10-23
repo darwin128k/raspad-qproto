@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `qproto.log_level`). `logging_mode` and `logging_split` are no longer read
   from `qproto.cfg`.
 - The host is kept with `authum_host_copy`.
-- Follows Authum's layout: `modules/qproto.so`, config in
-  `addons/authum/configs/qproto.cfg`, Vellum key pins in
-  `data/qproto/vellum_keys.txt`.
+- Follows Authum's sandbox layout: everything in
+  `addons/authum/modules/qproto/` — `qproto.so`, `configs/qproto.cfg`,
+  `data/vellum_keys.txt` (Vellum key pins), `logs/`.
 
 ### Changed
 
