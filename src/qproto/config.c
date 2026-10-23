@@ -30,6 +30,9 @@ qproto_config_t g_qproto_config = {
     .cid_steam_pending = qproto_client_id_kind_steam_id_pending,
     .cid_steam = qproto_client_id_kind_real_steam,
 
+    .vellum_server_ip_count = 0u,
+    .vellum_max_clock_skew = 86400u,
+
     .logging_sinks = authum_logger_sink_host,
     .logging_split = authum_logger_file_split_full,
 };
@@ -44,6 +47,7 @@ static const authum_cfg_item_t qproto_config_items[] = {
     {"enable_vellum", authum_cfg_kind_bool, &g_qproto_config.enable_vellum, 0},
 
     {"logging_mode", authum_cfg_kind_u32, &g_qproto_config.logging_sinks, 0},
+    {"vellum_max_clock_skew", authum_cfg_kind_u32, &g_qproto_config.vellum_max_clock_skew, 0},
 
     {"cid_revemu", authum_cfg_kind_i32, &g_qproto_config.cid_revemu, 0},
     {"cid_revemu_2013", authum_cfg_kind_i32, &g_qproto_config.cid_revemu_2013, 0},
@@ -81,6 +85,7 @@ qproto_config_load(void)
     authum_cfg_t cfg;
     authum_char_t layout[32];
     authum_char_t split[32];
+    authum_char_t server_ips[128];
     authum_i32_t cid_steam;
 
     if (!authum_path_join(&path, authum_host_env_module(&g_qproto_host), "qproto.cfg") ||
@@ -102,6 +107,12 @@ qproto_config_load(void)
     if (authum_cfg_apply_cstr(&cfg, "logging_split", split, sizeof split))
     {
         g_qproto_config.logging_split = authum_logger_file_split_parse(split);
+    }
+
+    if (authum_cfg_apply_cstr(&cfg, "vellum_server_ip", server_ips, sizeof server_ips))
+    {
+        g_qproto_config.vellum_server_ip_count = qproto_vellum_parse_ip_list(
+            server_ips, g_qproto_config.vellum_server_ips, QPROTO_VELLUM_MAX_SERVER_IPS);
     }
 
     cid_steam = (authum_i32_t)g_qproto_config.cid_steam;
@@ -133,4 +144,7 @@ qproto_config_load(void)
         (int)g_qproto_config.cid_nosteam48, (int)g_qproto_config.cid_steam_pending,
         (unsigned)g_qproto_config.logging_sinks,
         g_qproto_config.logging_split == authum_logger_file_split_session ? "session" : "full");
+    authum_logger_info(&g_qproto_logger, "Vellum: vellum_server_ip entries=%u max_clock_skew=%us",
+                       (unsigned)g_qproto_config.vellum_server_ip_count,
+                       (unsigned)g_qproto_config.vellum_max_clock_skew);
 }

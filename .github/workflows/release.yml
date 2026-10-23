@@ -34,8 +34,8 @@ jobs:
           sudo dpkg --add-architecture i386
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            gcc-multilib g++-multilib cmake ninja-build zip \
-            libc6-dev:i386 libstdc++-12-dev:i386
+            gcc-multilib cmake ninja-build zip \
+            libc6-dev:i386
 
       - name: Build
         run: |
@@ -77,9 +77,9 @@ jobs:
           TAG="${{ steps.tag.outputs.name }}"
           NOTES=$(mktemp)
           python3 scripts/release_notes.py --tag "$TAG" \
-            --package "Download **`qproto-linux32-authum.zip`** and unpack → `addons/authum/modules/qproto/`." \
+            --package "Download **\`qproto-linux32-authum.zip\`** and unpack → \`addons/authum/modules/qproto/\`." \
             --highlight "Authum client module (needs Authum host)" \
-            --highlight "Pure C11; events + authum qproto info"
+            --highlight "Pure C11; events + authum qproto info" \
             > "$NOTES"
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             gh release create "$TAG" --title "$TAG" --notes-file "$NOTES"

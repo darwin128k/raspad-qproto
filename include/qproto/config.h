@@ -9,6 +9,7 @@
 
 #include <qproto/engine.h>
 #include <qproto/shared.h>
+#include <qproto/vellum/address.h>
 
 /**
  * Runtime settings. Defaults live on ::g_qproto_config (static init);
@@ -37,6 +38,16 @@ struct qproto_config
     qproto_client_id_kind_t cid_nosteam48;
     qproto_client_id_kind_t cid_steam_pending;
     qproto_client_id_kind_t cid_steam;
+
+    /*
+     * Vellum v2: public address(es) players dial (`vellum_server_ip`, comma
+     * list). Empty = take the engine's `ip` cvar; if that is unset too, only
+     * the port is checked.
+     */
+    authum_u32_t vellum_server_ips[QPROTO_VELLUM_MAX_SERVER_IPS];
+    authum_usize_t vellum_server_ip_count;
+    /** Max |server clock - ticket clock|, seconds. */
+    authum_u32_t vellum_max_clock_skew;
 
     authum_logger_sink_t logging_sinks;
     /** File layout when the file bit is set — Authum `full` / `session`. */

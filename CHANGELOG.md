@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Vellum v2 (breaking for raspad-revloader clients).** The ticket is now a
+  120-byte Ed25519-signed blob: the player's key pair lives in their user
+  profile, the signature covers the server address they dialled and their
+  clock, and the SteamID is derived from the public key. Forging another
+  player's SteamID, or replaying a ticket collected by another server, no
+  longer works. The player's hostname / disk serial are no longer sent.
+- First key seen for a Vellum SteamID is pinned in `vellum_keys.txt` (module
+  dir); a different key for that SteamID is refused.
+- Vellum auth key (ban / long authid source) is now the 32-byte public key.
+- Engine symbol lookup (`dlsym`, then the on-disk `.symtab`) and the
+  `Steam_NotifyClientConnect` detour now come from Authum
+  (`<authum/symbol.h>`, `<authum/detour.h>`), shared with other modules that
+  hook the engine. qproto's own copies are gone; behaviour is unchanged.
+
+### Added
+
+- `vellum_server_ip` (public IP list, falls back to the `ip` cvar) and
+  `vellum_max_clock_skew` (default 86400 s) in `qproto.cfg`.
+- Rejected Vellum tickets are logged with the reason (old v1, bad signature,
+  wrong server, clock, key mismatch) and never fall through to `cid_nosteam*`.
+
+### Removed
+
+- Vellum v1 tickets (unsigned, 64 bytes) are refused — players must update
+  raspad-revloader.
+
+### Dependencies
+
+- Authum `master` with `<authum/crypto/ed25519.h>` (Monocypher in
+  `authum_client`; no newer `authum_mm` needed on servers).
+
 ## [2.0.2] - 2026-10-21
 
 ### Fixed

@@ -8,13 +8,15 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-set(AUTHUM_DIR "${CMAKE_SOURCE_DIR}/lib/authum")
+# Point at another Authum checkout to build against unreleased Authum changes:
+#   cmake -S . -B build -DAUTHUM_DIR=/path/to/raspad-authum
+set(AUTHUM_DIR "${CMAKE_SOURCE_DIR}/lib/authum" CACHE PATH "Authum source tree")
 if (NOT EXISTS "${AUTHUM_DIR}/client/CMakeLists.txt")
     message(FATAL_ERROR
             "lib/authum missing — run: git submodule update --init --recursive lib/authum")
 endif ()
 
-add_subdirectory(lib/authum/client)
+add_subdirectory("${AUTHUM_DIR}/client" authum_client)
 
 # Engine-independent logic, shared by the module and the tests.
 add_library(qproto_core STATIC
@@ -24,6 +26,8 @@ add_library(qproto_core STATIC
         src/qproto/command.c
         src/qproto/authorizers.c
         src/qproto/utils.c
+        src/qproto/vellum/address.c
+        src/qproto/vellum/keystore.c
 )
 target_include_directories(qproto_core PUBLIC "${CMAKE_SOURCE_DIR}/include")
 target_link_libraries(qproto_core PUBLIC authum_client)
