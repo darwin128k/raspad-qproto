@@ -1,6 +1,7 @@
 #include <qproto/vellum/keystore.h>
 
 #include <authum/null.h>
+#include <authum/path.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -86,10 +87,16 @@ keystore_append(authum_u32_t account_id, const authum_byte_t public_key[VELLUM_P
     FILE *f;
     int i;
     int ok;
+    authum_path_t path, parent;
 
     if (authum_null_eq(g_path))
     {
         return authum_bool_true;
+    }
+    if (!authum_path_set_cstr(&path, g_path) ||
+        (authum_path_parent(&parent, &path) && !authum_path_ensure_dir(&parent)))
+    {
+        return authum_bool_false;
     }
     f = fopen(g_path, "a");
     if (authum_null_eq(f))

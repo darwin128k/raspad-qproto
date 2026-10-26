@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 int g_failures;
 int g_total;
@@ -242,6 +243,33 @@ test_pins(void)
 }
 
 void
+test_lazy_pin_directory(void)
+{
+    const char *directory = "qproto_test_lazy_data";
+    const char *path = "qproto_test_lazy_data/vellum_keys.txt";
+    struct stat info;
+    test_key_t owner;
+    authum_u32_t id;
+
+    remove(path);
+    remove(directory);
+    CHECK(stat(directory, &info) != 0);
+    make_key(&owner, 7);
+    id = vellum_account_id_from_key(owner.public_key);
+    CHECK(qproto_vellum_keystore_open(path));
+    CHECK(stat(directory, &info) != 0); /* Reading does not create data. */
+    CHECK(qproto_vellum_keystore_bind(id, owner.public_key) == qproto_vellum_bind_new);
+    CHECK(stat(path, &info) == 0); /* First write creates its parent through LH. */
+    qproto_vellum_keystore_close();
+    CHECK(qproto_vellum_keystore_open(path));
+    CHECK(qproto_vellum_keystore_count() == 1u);
+    CHECK(qproto_vellum_keystore_bind(id, owner.public_key) == qproto_vellum_bind_known);
+    qproto_vellum_keystore_close();
+    remove(path);
+    remove(directory);
+}
+
+void
 test_address(void)
 {
     authum_u32_t ips[QPROTO_VELLUM_MAX_SERVER_IPS];
@@ -264,6 +292,7 @@ main(void)
     test_accept();
     test_reject();
     test_pins();
+    test_lazy_pin_directory();
     test_address();
     printf("qproto_vellum: %d/%d checks passed\n", g_total - g_failures, g_total);
     return g_failures != 0;
