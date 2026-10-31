@@ -1,6 +1,6 @@
 #include <qproto/client/auth/kind.h>
 
-const char *
+const authum_char_t *
 qproto_client_auth_kind_name(qproto_client_auth_kind_t kind)
 {
     switch (kind)

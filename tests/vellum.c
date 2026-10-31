@@ -12,6 +12,7 @@
 #include <authum/crypto/ed25519.h>
 #include <authum/file.h>
 
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

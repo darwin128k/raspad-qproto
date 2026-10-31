@@ -14,16 +14,16 @@
  * is a forgery (or a 31-bit id collision) and is refused.
  *
  * File: one "<account_id> <64 hex public key>" per line, '#' comments.
- * New pins are appended as they happen. Engine-free (stdio only).
+ * New pins are appended as they happen. Engine-free (the Authum file facade only).
  */
 
 enum qproto_vellum_bind
 {
-    qproto_vellum_bind_known = 0,      /* id already pinned to this key */
-    qproto_vellum_bind_new = 1,        /* first sight — pinned and saved */
+    qproto_vellum_bind_known = 0,       /* id already pinned to this key */
+    qproto_vellum_bind_new = 1,         /* first sight — pinned and saved */
     qproto_vellum_bind_new_unsaved = 2, /* pinned in memory, file append failed */
-    qproto_vellum_bind_conflict = 3,   /* id pinned to a different key */
-    qproto_vellum_bind_error = 4,      /* out of memory / bad args */
+    qproto_vellum_bind_conflict = 3,    /* id pinned to a different key */
+    qproto_vellum_bind_error = 4,       /* out of memory / bad args */
 };
 typedef enum qproto_vellum_bind qproto_vellum_bind_t;
 

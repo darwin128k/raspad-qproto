@@ -13,13 +13,13 @@ static const qproto_engine_layout_info_t g_build10211 = {
     0x20u,                                    /* netchan still @ 0x1c + remote_address @ +4 */
     "build10211 (Oct 2024)"};
 
-void *
-qproto_engine_resolve(const char *symbol, int *out_via_dynsym)
+authum_ptr
+qproto_engine_resolve(const authum_char_t *symbol, authum_i32_t *out_via_dynsym)
 {
     authum_bool_t via_dynsym = authum_bool_false;
     authum_ptr address = authum_symbol_find_engine(symbol, &via_dynsym);
 
-    if (out_via_dynsym)
+    if (!authum_null_eq(out_via_dynsym))
     {
         *out_via_dynsym = via_dynsym ? 1 : 0;
     }
@@ -29,7 +29,8 @@ qproto_engine_resolve(const char *symbol, int *out_via_dynsym)
 }
 
 const qproto_engine_layout_info_t *
-qproto_engine_select_layout(qproto_engine_layout_t override_layout, int resolved_via_dynsym)
+qproto_engine_select_layout(qproto_engine_layout_t override_layout,
+                            authum_i32_t resolved_via_dynsym)
 {
     if (override_layout == qproto_engine_layout_classic)
     {
@@ -44,7 +45,7 @@ qproto_engine_select_layout(qproto_engine_layout_t override_layout, int resolved
     return resolved_via_dynsym ? &g_classic : &g_build10211;
 }
 
-const char *
+const authum_char_t *
 qproto_engine_layout_name(qproto_engine_layout_t layout)
 {
     switch (layout)

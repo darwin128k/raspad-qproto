@@ -1,9 +1,8 @@
 #include <qproto/client/state.h>
 
 #include <authum/cstr.h>
+#include <authum/memory.h>
 #include <authum/null.h>
-
-#include <string.h>
 
 qproto_client_info_t *g_qproto_clients;
 qproto_client_info_t g_qproto_pending;
@@ -63,7 +62,7 @@ qproto_client_state_bind(const authum_event_client_t *ev)
     }
     if (!g_qproto_pending_valid)
     {
-        memset(slot, 0, sizeof *slot);
+        authum_memory_set(slot, 0, sizeof *slot);
         return authum_null;
     }
     *slot = g_qproto_pending;
@@ -84,7 +83,7 @@ qproto_client_state_clear(authum_i32_t index)
 
     if (!authum_null_eq(slot))
     {
-        memset(slot, 0, sizeof *slot);
+        authum_memory_set(slot, 0, sizeof *slot);
     }
 }
 
