@@ -61,14 +61,14 @@ static const authum_cfg_item_t qproto_config_items[] = {
 qproto_engine_layout_t
 qproto_config_parse_engine_layout(const authum_char_t *value)
 {
-    if (authum_cstr_eq(value, "classic", authum_bool_true) ||
-        authum_cstr_eq(value, "8684", authum_bool_true) ||
-        authum_cstr_eq(value, "2018", authum_bool_true))
+    if (authum_cstr_is_equal(value, "classic", authum_bool_true) ||
+        authum_cstr_is_equal(value, "8684", authum_bool_true) ||
+        authum_cstr_is_equal(value, "2018", authum_bool_true))
     {
         return qproto_engine_layout_classic;
     }
-    if (authum_cstr_eq(value, "10211", authum_bool_true) ||
-        authum_cstr_eq(value, "build10211", authum_bool_true))
+    if (authum_cstr_is_equal(value, "10211", authum_bool_true) ||
+        authum_cstr_is_equal(value, "build10211", authum_bool_true))
     {
         return qproto_engine_layout_build10211;
     }
@@ -85,7 +85,7 @@ qproto_config_load(void)
     authum_i32_t cid_steam;
 
     /* modules/qproto/configs/qproto.cfg */
-    if (!authum_host_config_path(&g_qproto_host, "qproto.cfg", &path) ||
+    if (!authum_host_join_config_path(&g_qproto_host, "qproto.cfg", &path) ||
         !authum_cfg_open(&cfg, &path))
     {
         authum_logger_info(&g_qproto_logger, "qproto.cfg not found - using defaults");
@@ -125,7 +125,7 @@ qproto_config_load(void)
         "qproto.cfg loaded from %s: RevEmu=%d(cid=%d) RevEmu2013=%d(cid=%d) SC2009=%d(cid=%d) "
         "OldRevEmu=%d(cid=%d) SXEI=%d(cid=%d) Vellum=%d(cid=%d) Steam(cid=%d) Setti(cid=%d) "
         "NoSteam47(cid=%d) NoSteam48(cid=%d) SteamPending(cid=%d)",
-        authum_path_as_cstr(&path), (int)g_qproto_config.enable_revemu,
+        authum_path_get_cstr(&path), (int)g_qproto_config.enable_revemu,
         (int)g_qproto_config.cid_revemu, (int)g_qproto_config.enable_revemu_2013,
         (int)g_qproto_config.cid_revemu_2013, (int)g_qproto_config.enable_sc2009,
         (int)g_qproto_config.cid_sc2009, (int)g_qproto_config.enable_old_revemu,

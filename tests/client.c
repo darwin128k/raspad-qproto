@@ -38,7 +38,6 @@ fake_sandbox_alloc(authum_ptr parent, authum_usize_t size)
 }
 
 const authum_sandbox_ops_t g_fake_sandbox_ops = {
-    .size = sizeof(authum_sandbox_ops_t),
     .alloc = fake_sandbox_alloc,
 };
 
@@ -65,10 +64,8 @@ make_connect(authum_i32_t index, authum_i32_t userid, const char *name)
     authum_event_client_t ev;
 
     memset(&ev, 0, sizeof ev);
-    ev.size = sizeof ev;
     ev.index = index;
     ev.userid = userid;
-    ev.allow = authum_bool_true;
     ev.unix_time = 1700000000;
     authum_cstr_copy(ev.name, sizeof ev.name, name);
     authum_cstr_copy(ev.auth_id, sizeof ev.auth_id, "STEAM_0:1:42");
@@ -152,7 +149,6 @@ test_long_authid(void)
     qproto_client_info_t b;
 
     memset(&crypto, 0, sizeof crypto);
-    crypto.size = sizeof crypto;
     crypto.sha_hash = fake_sha_hash;
 
     memset(&a, 0, sizeof a);
@@ -199,7 +195,6 @@ make_command(authum_usize_t argc, const authum_char_t *const *argv)
     authum_command_t cmd;
 
     memset(&cmd, 0, sizeof cmd);
-    cmd.size = sizeof cmd;
     cmd.scope = "qproto";
     cmd.name = "info";
     cmd.argc = argc;
@@ -212,8 +207,7 @@ void
 test_command_info(void)
 {
     authum_sandbox_t sb = {&g_fake_sandbox_ops, (authum_ptr)&sb};
-    const authum_commands_ops_t ops = {.size = sizeof(authum_commands_ops_t),
-                                       .add = fake_command_add};
+    const authum_commands_ops_t ops = {.add = fake_command_add};
     authum_commands_t commands = {&ops, authum_null, "qproto"};
     authum_host_t host;
     qproto_client_info_t pending;
@@ -226,7 +220,6 @@ test_command_info(void)
     const authum_char_t *too_many[] = {"a", "b"};
 
     memset(&host, 0, sizeof host);
-    host.size = sizeof host;
     authum_host_set_commands(&host, &commands);
     g_added = 0u;
     CHECK(qproto_command_start(&host));

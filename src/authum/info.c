@@ -7,5 +7,5 @@ AUTHUM_MODULE_EXPORT authum_module_info_t authum_module_info = {
     .date = "2026-10-20",
     .author = "raspad",
     .url = "",
-    .logtag = "QPROTO",
+    .tag = "QPROTO",
 };

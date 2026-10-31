@@ -101,16 +101,16 @@ qproto_command_info(const authum_command_t *cmd, authum_ptr user)
     authum_usize_t n = 0u;
 
     (void)user;
-    if (authum_command_argc(cmd) > 1u)
+    if (authum_command_get_argc(cmd) > 1u)
     {
         return authum_bool_false;
     }
-    if (authum_command_argc(cmd) == 1u)
+    if (authum_command_get_argc(cmd) == 1u)
     {
-        info = qproto_command_lookup(authum_command_argv(cmd, 0u));
+        info = qproto_command_lookup(authum_command_get_argv(cmd, 0u));
         if (authum_null_eq(info))
         {
-            authum_command_printf(cmd, "qproto: no client '%s'", authum_command_argv(cmd, 0u));
+            authum_command_printf(cmd, "qproto: no client '%s'", authum_command_get_argv(cmd, 0u));
             return authum_bool_true;
         }
         qproto_command_print_detail(cmd, info);

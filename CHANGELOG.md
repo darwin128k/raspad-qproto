@@ -9,8 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Built on Authum 3.0.0 (module ABI 1.0.0); `lib/authum` tracks branch
-  `3.0.0`. Needs `authum_mm` 3.0.0 — older hosts refuse the module.
+- Built on Authum 4.0.0 (module ABI 3.0.0); `lib/authum` tracks branch
+  `4.0.0`. Hosts older than the ABI 3.0 refuse the module.
+- The API of the host is named the way it returns: `authum_cstr_is_equal`,
+  `authum_command_get_argc` / `_get_argv`, `authum_host_get_crypto` /
+  `_get_engine` / `_get_sandbox` / `_get_events` / `_get_commands`,
+  `authum_host_get_module_path` / `_get_module_data_path`,
+  `authum_host_join_config_path` / `_join_data_path`,
+  `authum_path_get_cstr`, `authum_path_assign_parent`,
+  `authum_crypto_ed25519_create_key_pair` / `_is_valid`.
+- The module identity field `logtag` is now `tag`.
+- `authum_host_publish` is gone: a module announces **its own** name with
+  `authum_host_forward` and asks someone else's with `authum_host_query`.
+  `qproto.client.authorized` is qproto's own name; `qproto.client.query` is
+  answered by qproto and asked with `authum_host_query`.
+- The client event carries no decision any more (`allow`, `reject_reason`,
+  `decided_by` are gone): a refusal is a hook, not an event field. qproto never
+  refused through the event, so nothing changed in its behaviour.
+- The host tables carry no size: the `size` member is gone from the sandbox,
+  command, crypto and host structures.
+- The keystore reads and writes through `authum_file_t` (`<authum/file.h>`)
+  instead of `fopen` — the module names no platform.
+- The module links `dl` and `m` only where they exist (not on Windows): the
+  build works under MSYS2 MinGW now.
+
+### Added
+
 - Logging is Authum's: lines go to `addons/authum/logs/qproto/YYYY-MM-DD.log`,
   warnings and errors also to `logs/authum/`, levels in
   `addons/authum/authum.cfg` (`log_level`, `log_console`,

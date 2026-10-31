@@ -32,16 +32,12 @@ qproto_events_on_connect(const authum_char_t *name, authum_ptr payload, authum_p
 
     (void)name;
     (void)user;
-    if (authum_null_eq(ev) || ev->size < sizeof *ev)
+    if (authum_null_eq(ev))
     {
         return authum_event_result_continue;
     }
-    if (!ev->allow)
-    {
-        qproto_client_state_drop_pending();
-        qproto_client_state_clear(ev->index);
-        return authum_event_result_continue;
-    }
+    /* The event says that a client is connecting. The refusal lives in the
+     * hook chain now: it is not a field of the event. */
 
     info = qproto_client_state_bind(ev);
     if (authum_null_eq(info))
@@ -49,13 +45,13 @@ qproto_events_on_connect(const authum_char_t *name, authum_ptr payload, authum_p
         return authum_event_result_continue;
     }
 
-    qproto_client_long_authid(authum_host_crypto(&g_qproto_host), info);
+    qproto_client_long_authid(authum_host_get_crypto(&g_qproto_host), info);
     authum_logger_info(&g_qproto_logger, "client #%d userid=%d name='%s' auth_kind=%d id=%s",
                        (int)info->index, (int)info->userid, info->name, (int)info->auth_kind,
                        info->auth_id);
 
     announced = *info;
-    authum_host_publish(&g_qproto_host, QPROTO_EVENT_CLIENT_AUTHORIZED, &announced);
+    authum_host_forward(&g_qproto_host, QPROTO_EVENT_CLIENT_AUTHORIZED, &announced);
     return authum_event_result_handled;
 }
 
@@ -66,7 +62,7 @@ qproto_events_on_disconnect(const authum_char_t *name, authum_ptr payload, authu
 
     (void)name;
     (void)user;
-    if (!authum_null_eq(ev) && ev->size >= sizeof *ev)
+    if (!authum_null_eq(ev))
     {
         qproto_client_state_clear(ev->index);
     }

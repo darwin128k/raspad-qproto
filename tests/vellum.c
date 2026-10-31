@@ -16,6 +16,22 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#if defined(_WIN32)
+#    include <direct.h>
+#    define test_rmdir _rmdir
+#else
+#    include <unistd.h>
+#    define test_rmdir rmdir
+#endif
+
+/** Remove @p path and then the directory that holds it: Windows has no `remove` for a directory. */
+static void
+test_remove_data(const char *path, const char *directory)
+{
+    remove(path);
+    test_rmdir(directory);
+}
+
 int g_failures;
 int g_total;
 
@@ -55,7 +71,7 @@ make_key(test_key_t *key, authum_byte_t fill)
     authum_byte_t seed[AUTHUM_CRYPTO_ED25519_SEED_SIZE];
 
     memset(seed, fill, sizeof seed);
-    authum_crypto_ed25519_key_pair(key->secret_key, key->public_key, seed);
+    authum_crypto_ed25519_create_key_pair(key->secret_key, key->public_key, seed);
 }
 
 void
@@ -142,7 +158,7 @@ test_reject(void)
     qproto_vellum_keystore_open(authum_null);
     make_key(&key, 2);
 
-    /* v1 is refused outright — not handed to the NoSteam catch-all. */
+    /* v1 is refused outright вЂ” not handed to the NoSteam catch-all. */
     memset(v1, 0, sizeof v1);
     memcpy(v1, &magic, sizeof magic);
     memcpy(v1 + sizeof magic, &version, sizeof version);
@@ -211,7 +227,7 @@ test_pins(void)
     CHECK(qproto_vellum_keystore_count() == 0u);
     CHECK(qproto_vellum_keystore_bind(id, owner.public_key) == qproto_vellum_bind_new);
     CHECK(qproto_vellum_keystore_bind(id, owner.public_key) == qproto_vellum_bind_known);
-    /* Same id, another key — what a forger with a colliding key would hit. */
+    /* Same id, another key вЂ” what a forger with a colliding key would hit. */
     CHECK(qproto_vellum_keystore_bind(id, thief.public_key) == qproto_vellum_bind_conflict);
     qproto_vellum_keystore_close();
 
@@ -251,8 +267,7 @@ test_lazy_pin_directory(void)
     test_key_t owner;
     authum_u32_t id;
 
-    remove(path);
-    remove(directory);
+    test_remove_data(path, directory);
     CHECK(stat(directory, &info) != 0);
     make_key(&owner, 7);
     id = vellum_account_id_from_key(owner.public_key);
@@ -265,8 +280,7 @@ test_lazy_pin_directory(void)
     CHECK(qproto_vellum_keystore_count() == 1u);
     CHECK(qproto_vellum_keystore_bind(id, owner.public_key) == qproto_vellum_bind_known);
     qproto_vellum_keystore_close();
-    remove(path);
-    remove(directory);
+    test_remove_data(path, directory);
 }
 
 void
