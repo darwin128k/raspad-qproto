@@ -36,12 +36,6 @@ qproto_client_state_set_pending(const qproto_client_info_t *info)
     g_qproto_pending_valid = authum_bool_true;
 }
 
-void
-qproto_client_state_drop_pending(void)
-{
-    g_qproto_pending_valid = authum_bool_false;
-}
-
 qproto_client_info_t *
 qproto_client_state_slot(authum_i32_t index)
 {
@@ -131,7 +125,7 @@ qproto_client_state_find(const qproto_client_query_t *query)
             }
         }
         else if (query->name[0] != '\0' &&
-                 authum_cstr_eq(slot->name, query->name, authum_bool_true))
+                 authum_cstr_is_equal(slot->name, query->name, authum_bool_true))
         {
             return slot;
         }

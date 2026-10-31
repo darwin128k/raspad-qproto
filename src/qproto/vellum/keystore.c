@@ -1,5 +1,6 @@
 #include <qproto/vellum/keystore.h>
 
+#include <authum/file.h>
 #include <authum/null.h>
 #include <authum/path.h>
 
@@ -84,9 +85,11 @@ keystore_parse_line(const authum_char_t *line, authum_u32_t *account_id,
 static authum_bool_t
 keystore_append(authum_u32_t account_id, const authum_byte_t public_key[VELLUM_PUBLIC_KEY_SIZE])
 {
-    FILE *f;
-    int i;
-    int ok;
+    authum_file_t file;
+    authum_char_t line[VELLUM_PUBLIC_KEY_SIZE * 2 + 16];
+    authum_usize_t length;
+    authum_usize_t written = 0u;
+    authum_usize_t i;
     authum_path_t path, parent;
 
     if (authum_null_eq(g_path))
@@ -94,30 +97,92 @@ keystore_append(authum_u32_t account_id, const authum_byte_t public_key[VELLUM_P
         return authum_bool_true;
     }
     if (!authum_path_set_cstr(&path, g_path) ||
-        (authum_path_parent(&parent, &path) && !authum_path_ensure_dir(&parent)))
+        (authum_path_assign_parent(&parent, &path) && !authum_path_ensure_dir(&parent)))
     {
         return authum_bool_false;
     }
-    f = fopen(g_path, "a");
-    if (authum_null_eq(f))
+    /* "<id> <hex>" — the formatter knows no width, so the hex is written out. */
+    length = authum_cstr_format(line, sizeof line, "%u ", (unsigned)account_id);
+    if (length == 0u)
     {
         return authum_bool_false;
     }
-    ok = fprintf(f, "%u ", (unsigned)account_id) > 0;
-    for (i = 0; i < VELLUM_PUBLIC_KEY_SIZE && ok; ++i)
+    for (i = 0u; i < VELLUM_PUBLIC_KEY_SIZE; ++i)
     {
-        ok = fprintf(f, "%02x", (unsigned)public_key[i]) > 0;
+        const authum_char_t digits[] = "0123456789abcdef";
+
+        line[length++] = digits[(public_key[i] >> 4) & 0x0fu];
+        line[length++] = digits[public_key[i] & 0x0fu];
     }
-    ok = ok && fputc('\n', f) != EOF;
-    ok = (fclose(f) == 0) && ok;
-    return ok ? authum_bool_true : authum_bool_false;
+    line[length++] = '\n';
+    line[length] = '\0';
+
+    authum_file_init(&file);
+    if (!authum_file_open_cstr(&file, g_path, authum_file_mode_append))
+    {
+        return authum_bool_false;
+    }
+    if (!authum_file_write(&file, line, length, &written) || written != length)
+    {
+        authum_file_close(&file);
+        return authum_bool_false;
+    }
+    authum_file_close(&file);
+    return authum_bool_true;
+}
+
+/** The whole file in a buffer the caller frees; null when the read failed. */
+static authum_char_t *
+keystore_read_all(authum_file_t *file, authum_usize_t *out_size)
+{
+    authum_char_t *text = authum_null;
+    authum_usize_t capacity = 0u;
+    authum_usize_t size = 0u;
+
+    for (;;)
+    {
+        authum_usize_t read = 0u;
+        authum_char_t *grown;
+
+        if (size == capacity)
+        {
+            capacity = capacity > 0u ? capacity * 2u : 4096u;
+            grown = (authum_char_t *)realloc(text, capacity);
+            if (authum_null_eq(grown))
+            {
+                free(text);
+                return authum_null;
+            }
+            text = grown;
+        }
+        if (!authum_file_read(file, text + size, capacity - size, &read) || read == 0u)
+        {
+            break;
+        }
+        size += read;
+    }
+    if (authum_null_eq(text))
+    {
+        /* An empty file: the buffer is still needed to walk the lines. */
+        text = (authum_char_t *)malloc(1u);
+        if (authum_null_eq(text))
+        {
+            return authum_null;
+        }
+    }
+    text[size] = '\0';
+    *out_size = size;
+    return text;
 }
 
 authum_bool_t
 qproto_vellum_keystore_open(const authum_char_t *path)
 {
-    FILE *f;
-    char line[256];
+    authum_file_t file;
+    authum_char_t *text;
+    authum_usize_t size = 0u;
+    authum_usize_t start = 0u;
+    authum_usize_t i;
     authum_u32_t account_id;
     authum_byte_t public_key[VELLUM_PUBLIC_KEY_SIZE];
     size_t len;
@@ -136,25 +201,36 @@ qproto_vellum_keystore_open(const authum_char_t *path)
     }
     memcpy(g_path, path, len + 1u);
 
-    f = fopen(path, "r");
-    if (authum_null_eq(f))
+    authum_file_init(&file);
+    if (!authum_file_open_cstr(&file, path, authum_file_mode_read))
     {
         return authum_bool_true; /* first start: nothing pinned yet */
     }
-    while (fgets(line, sizeof line, f))
+    text = keystore_read_all(&file, &size);
+    authum_file_close(&file);
+    if (authum_null_eq(text))
     {
-        if (line[0] == '#' || !keystore_parse_line(line, &account_id, public_key))
+        return authum_bool_false;
+    }
+    for (i = 0u; i <= size; ++i)
+    {
+        if (i != size && text[i] != '\n')
         {
             continue;
         }
-        /* First pin wins, same as at runtime. */
-        if (authum_null_eq(keystore_find(account_id)) && !keystore_push(account_id, public_key))
+        text[i] = '\0';
+        if (i > start && text[start] != '#' && keystore_parse_line(text + start, &account_id, public_key))
         {
-            fclose(f);
-            return authum_bool_false;
+            /* First pin wins, same as at runtime. */
+            if (authum_null_eq(keystore_find(account_id)) && !keystore_push(account_id, public_key))
+            {
+                free(text);
+                return authum_bool_false;
+            }
         }
+        start = i + 1u;
     }
-    fclose(f);
+    free(text);
     return authum_bool_true;
 }
 

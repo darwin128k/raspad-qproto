@@ -28,12 +28,12 @@ qproto_authum_start(authum_host_t *host)
     authum_host_copy(&g_qproto_host, host);
     qproto_logger_start(&g_qproto_host);
 
-    if (authum_null_eq(authum_host_crypto(&g_qproto_host)) ||
-        authum_null_eq(authum_host_engine(&g_qproto_host)) ||
-        authum_null_eq(authum_host_env(&g_qproto_host)) ||
-        authum_null_eq(authum_host_sandbox(&g_qproto_host)) ||
-        authum_null_eq(authum_host_events(&g_qproto_host)) ||
-        authum_null_eq(authum_host_commands(&g_qproto_host)))
+    if (authum_null_eq(authum_host_get_crypto(&g_qproto_host)) ||
+        authum_null_eq(authum_host_get_engine(&g_qproto_host)) ||
+        authum_null_eq(authum_host_get_env(&g_qproto_host)) ||
+        authum_null_eq(authum_host_get_sandbox(&g_qproto_host)) ||
+        authum_null_eq(authum_host_get_events(&g_qproto_host)) ||
+        authum_null_eq(authum_host_get_commands(&g_qproto_host)))
     {
         authum_logger_error(
             &g_qproto_logger,
@@ -43,16 +43,16 @@ qproto_authum_start(authum_host_t *host)
 
     qproto_config_load();
     authum_logger_info(&g_qproto_logger, "start — data dir: %s",
-                       authum_path_as_cstr(authum_host_env_module_data(&g_qproto_host)));
+                       authum_path_get_cstr(authum_host_get_module_data_path(&g_qproto_host)));
 
     /* Vellum SteamID -> key pins; without the file they only live until stop. */
     /* modules/qproto/data/vellum_keys.txt: written by qproto. */
-    if (authum_host_data_path(&g_qproto_host, "vellum_keys.txt", &keys_path) &&
-        qproto_vellum_keystore_open(authum_path_as_cstr(&keys_path)))
+    if (authum_host_join_data_path(&g_qproto_host, "vellum_keys.txt", &keys_path) &&
+        qproto_vellum_keystore_open(authum_path_get_cstr(&keys_path)))
     {
         authum_logger_info(&g_qproto_logger, "Vellum key pins: %u loaded from %s",
                            (unsigned)qproto_vellum_keystore_count(),
-                           authum_path_as_cstr(&keys_path));
+                           authum_path_get_cstr(&keys_path));
     }
     else
     {
@@ -60,7 +60,7 @@ qproto_authum_start(authum_host_t *host)
         authum_logger_error(&g_qproto_logger, "Vellum key pins: file unusable - memory only");
     }
 
-    if (!qproto_client_state_start(authum_host_sandbox(&g_qproto_host)) || !qproto_events_start() ||
+    if (!qproto_client_state_start(authum_host_get_sandbox(&g_qproto_host)) || !qproto_events_start() ||
         !qproto_command_start(&g_qproto_host))
     {
         authum_logger_error(&g_qproto_logger,

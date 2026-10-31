@@ -29,7 +29,7 @@ Build ships a sample `qproto.cfg` at the repo root — copy it next to the `.so`
 
 ## How load works
 
-1. Open `qproto.cfg` under the module env path (`authum_host_env_module` + join).
+1. Open `qproto.cfg` under the module config path (`authum_host_join_config_path`).
 2. `authum_cfg_apply_items` with `qproto_config_items[]` — bools, cids, sink
 3. **Custom keys** that are not plain table fields:
    - `engine_layout` — string → `qproto_engine_layout_t` (`auto` / `classic` /

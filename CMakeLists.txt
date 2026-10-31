@@ -76,7 +76,11 @@ if (NOT MSVC)
     )
 endif ()
 
-target_link_libraries(qproto PRIVATE qproto_core authum_client dl m)
+target_link_libraries(qproto PRIVATE qproto_core authum_client)
+if (NOT WIN32)
+    # dlopen and libm are POSIX names; Windows has neither as a library.
+    target_link_libraries(qproto PRIVATE dl m)
+endif ()
 
 option(QPROTO_BUILD_TESTS "Build qproto tests (ctest)" ON)
 if (QPROTO_BUILD_TESTS)

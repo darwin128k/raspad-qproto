@@ -23,8 +23,6 @@ qproto_client_state_stop(void);
 
 void
 qproto_client_state_set_pending(const qproto_client_info_t *info);
-void
-qproto_client_state_drop_pending(void);
 
 /* Move the pending record into ev->index. Null when nothing was pending. */
 qproto_client_info_t *

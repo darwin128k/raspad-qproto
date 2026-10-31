@@ -50,7 +50,7 @@ when qproto has bound the auth result to the slot. Payload:
 #include <qproto/event.h>
 
 qproto_client_query_t q = { .size = sizeof q, .index = id };  /* or .userid, or .name */
-if (authum_host_publish(host, QPROTO_EVENT_CLIENT_QUERY, &q) != authum_event_result_continue
+if (authum_host_query(host, QPROTO_EVENT_CLIENT_QUERY, &q) != authum_event_result_continue
     && q.found) {
     /* q.info.auth_kind, q.info.long_authid, … */
 }

@@ -161,7 +161,7 @@ revemu_2013_ticket_authorize(const revemu_2013_ticket_t *ticket, qproto_authdata
         return 0;
     }
 
-    crypto = authum_host_crypto(&g_qproto_host);
+    crypto = authum_host_get_crypto(&g_qproto_host);
     if (authum_null_eq(crypto))
     {
         return 0;
@@ -246,7 +246,7 @@ sc2009_ticket_authorize(const sc2009_ticket_t *ticket, qproto_authdata_t *authda
         return 0;
     }
 
-    crypto = authum_host_crypto(&g_qproto_host);
+    crypto = authum_host_get_crypto(&g_qproto_host);
     if (authum_null_eq(crypto))
     {
         return 0;
@@ -571,7 +571,7 @@ qproto_vellum_authorize(qproto_authdata_t *authdata)
         return vellum_reject(authdata, "Vellum ticket malformed (version=%u flags=%u)",
                              (unsigned)ticket.version, (unsigned)ticket.flags);
     }
-    if (!authum_crypto_ed25519_check(ticket.signature, ticket.public_key,
+    if (!authum_crypto_ed25519_is_valid(ticket.signature, ticket.public_key,
                                      (const authum_byte_t *)&ticket,
                                      (authum_usize_t)VELLUM_TICKET_SIGNED_SIZE))
     {
