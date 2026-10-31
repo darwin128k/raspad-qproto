@@ -10,9 +10,9 @@
  *       authum.client.connect, when qproto knows how the client got in.
  *
  *   QPROTO_EVENT_CLIENT_QUERY       query    payload qproto_client_query_t
- *       Fill the in-fields, publish; qproto answers with `found` + `info`
- *       and returns authum_event_result_handled. Result continue → qproto is
- *       not loaded or nobody matched.
+ *       Fill the in-fields and ask with `authum_host_query`; qproto answers
+ *       with `found` + `info` and returns authum_event_result_handled. Result
+ *       continue → qproto is not loaded or nobody matched.
  */
 
 #include <authum/bool.h>
