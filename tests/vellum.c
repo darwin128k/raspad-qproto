@@ -10,6 +10,7 @@
 #include <qproto/vellum/ticket.h>
 
 #include <authum/crypto/ed25519.h>
+#include <authum/file.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -215,7 +216,6 @@ test_pins(void)
     qproto_authdata_t a;
     authum_u32_t id;
     char path[] = "qproto_test_vellum_keys.txt";
-    FILE *f;
 
     reset_config();
     remove(path);
@@ -232,12 +232,14 @@ test_pins(void)
     qproto_vellum_keystore_close();
 
     /* Pins survive a restart; comments and junk lines are ignored. */
-    f = fopen(path, "a");
-    CHECK(f != NULL);
-    if (f)
     {
-        fputs("# comment\nnot a pin\n", f);
-        fclose(f);
+        authum_file_t file;
+        authum_usize_t written = 0u;
+
+        authum_file_init(&file);
+        CHECK(authum_file_open_cstr(&file, path, authum_file_mode_append));
+        CHECK(authum_file_write(&file, "# comment\nnot a pin\n", 19u, &written));
+        authum_file_close(&file);
     }
     CHECK(qproto_vellum_keystore_open(path));
     CHECK(qproto_vellum_keystore_count() == 1u);
