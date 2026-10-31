@@ -6,10 +6,9 @@
 
 #include <authum/command/def.h>
 #include <authum/cstr.h>
+#include <authum/memory.h>
 #include <authum/null.h>
-
-#include <string.h>
-#include <time.h>
+#include <authum/time.h>
 
 const authum_command_def_t g_qproto_commands[] = {
     {"info", "[#userid | index | name]", "how clients authenticated (protocol, ids, connect time)",
@@ -27,14 +26,16 @@ const qproto_client_info_t *
 qproto_command_lookup(const authum_char_t *arg)
 {
     qproto_client_query_t query;
-    authum_i32_t number;
 
     if (authum_null_eq(arg) || arg[0] == '\0')
     {
         return authum_null;
     }
-    memset(&query, 0, sizeof query);
+    authum_memory_set(&query, 0, sizeof query);
     query.size = sizeof query;
+
+    authum_i32_t number;
+
     if (arg[0] == '#' && authum_cstr_parse_i32(arg + 1, &number) && number > 0)
     {
         query.userid = number;
@@ -63,18 +64,13 @@ qproto_command_print_detail(const authum_command_t *cmd, const qproto_client_inf
 {
     const authum_byte_t *ip = (const authum_byte_t *)&info->ip_address;
     authum_char_t hex[qproto_client_long_authid_size * 2 + 1];
-    authum_char_t when[32];
-    time_t at = (time_t)info->connected_at;
-    struct tm *tm = gmtime(&at);
-    authum_usize_t i;
 
-    for (i = 0u; i < qproto_client_long_authid_size; ++i)
-    {
-        hex[i * 2u] = "0123456789abcdef"[info->long_authid[i] >> 4];
-        hex[i * 2u + 1u] = "0123456789abcdef"[info->long_authid[i] & 15u];
-    }
-    hex[qproto_client_long_authid_size * 2] = '\0';
-    if (authum_null_eq(tm) || strftime(when, sizeof when, "%Y-%m-%d %H:%M:%S UTC", tm) == 0u)
+    authum_cstr_format_hex_bytes(info->long_authid, qproto_client_long_authid_size, hex, sizeof hex,
+                                 authum_bool_false);
+
+    authum_char_t when[32];
+
+    if (authum_time_format_utc((authum_i64_t)info->connected_at, when, sizeof when) == 0u)
     {
         authum_cstr_copy(when, sizeof when, "?");
     }

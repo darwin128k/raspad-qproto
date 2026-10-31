@@ -1,7 +1,7 @@
 #ifndef QPROTO_MINISTEAMID_H
 #define QPROTO_MINISTEAMID_H
 
-#include <stdint.h>
+#include <authum/byte.h>
 
 /*
  * Minimal stand-in for Valve's CSteamID (steamclientpublic.h), which full Steam SDK
@@ -14,13 +14,13 @@
  */
 typedef struct mini_steam_id
 {
-    uint64_t bits;
+    authum_u64_t bits;
 } mini_steam_id_t;
 
-static inline uint32_t
+static inline authum_u32_t
 mini_steam_id_get_account_id(const mini_steam_id_t *id)
 {
-    return (uint32_t)(id->bits & 0xFFFFFFFFu);
+    return (authum_u32_t)(id->bits & 0xFFFFFFFFu);
 }
 
 #endif /* QPROTO_MINISTEAMID_H */

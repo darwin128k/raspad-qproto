@@ -79,14 +79,17 @@ void
 qproto_config_load(void)
 {
     authum_path_t path;
-    authum_cfg_t cfg;
-    authum_char_t layout[32];
-    authum_char_t server_ips[128];
-    authum_i32_t cid_steam;
 
     /* modules/qproto/configs/qproto.cfg */
-    if (!authum_host_join_config_path(&g_qproto_host, "qproto.cfg", &path) ||
-        !authum_cfg_open(&cfg, &path))
+    if (!authum_host_join_config_path(&g_qproto_host, "qproto.cfg", &path))
+    {
+        authum_logger_info(&g_qproto_logger, "qproto.cfg not found - using defaults");
+        return;
+    }
+
+    authum_cfg_t cfg;
+
+    if (!authum_cfg_open(&cfg, &path))
     {
         authum_logger_info(&g_qproto_logger, "qproto.cfg not found - using defaults");
         return;
@@ -96,10 +99,14 @@ qproto_config_load(void)
         &cfg, qproto_config_items,
         (authum_usize_t)(sizeof qproto_config_items / sizeof qproto_config_items[0]));
 
+    authum_char_t layout[32];
+
     if (authum_cfg_apply_cstr(&cfg, "engine_layout", layout, sizeof layout))
     {
         g_qproto_config.engine_layout = qproto_config_parse_engine_layout(layout);
     }
+
+    authum_char_t server_ips[128];
 
     if (authum_cfg_apply_cstr(&cfg, "vellum_server_ip", server_ips, sizeof server_ips))
     {
@@ -107,7 +114,8 @@ qproto_config_load(void)
             server_ips, g_qproto_config.vellum_server_ips, QPROTO_VELLUM_MAX_SERVER_IPS);
     }
 
-    cid_steam = (authum_i32_t)g_qproto_config.cid_steam;
+    authum_i32_t cid_steam = (authum_i32_t)g_qproto_config.cid_steam;
+
     if (authum_cfg_apply_i32(&cfg, "cid_steam", &cid_steam))
     {
         if (cid_steam == (authum_i32_t)qproto_client_id_kind_steam_by_ip ||
