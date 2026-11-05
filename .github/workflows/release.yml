@@ -76,7 +76,7 @@ jobs:
           TAG="${{ steps.tag.outputs.name }}"
           NOTES=$(mktemp)
           python3 scripts/release_notes.py --tag "$TAG" \
-            --package "Download **\`qproto-linux32-authum.zip\`** and unpack → \`addons/authum/modules/qproto/\`." \
+            --package "Download **\`qproto-linux32-authum.zip\`** (Linux) or **\`qproto-win32-authum.zip\`** (Windows) and unpack → \`addons/authum/modules/qproto/\`." \
             --highlight "Authum client module (needs Authum host)" \
             --highlight "Pure C11; events + authum qproto info" \
             > "$NOTES"
@@ -86,3 +86,59 @@ jobs:
             gh release edit "$TAG" --notes-file "$NOTES"
           fi
           gh release upload "$TAG" qproto-linux32-authum.zip --clobber
+
+  win32:
+    name: Build and publish the Windows zip
+    # The Linux job creates the release; this one adds its zip to it.
+    needs: release
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
+
+      - name: Install MSYS2 MINGW32
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          update: true
+          install: >-
+            mingw-w64-i686-gcc
+            mingw-w64-i686-cmake
+            mingw-w64-i686-ninja
+            zip
+
+      - name: Build
+        run: |
+          cmake -S . -B build-win32 -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-win32 --target qproto -j"$(nproc)"
+
+      - name: Pack Authum module layout
+        run: |
+          rm -rf dist-win && mkdir -p dist-win/addons/authum/modules/qproto
+          cp build-win32/modules/qproto/qproto.dll dist-win/addons/authum/modules/qproto/qproto.dll
+          cp qproto.cfg dist-win/addons/authum/modules/qproto/qproto.cfg
+          printf 'qproto\n' > dist-win/addons/authum/modules.list.example
+          cat > dist-win/addons/authum/modules/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir so paths match Authum:
+
+            addons\authum\modules\qproto\qproto.dll
+            addons\authum\modules\qproto\qproto.cfg
+
+          Ensure Authum is installed, then add a line to addons\authum\modules.list:
+            qproto
+          EOF
+          sed -i 's/^          //' dist-win/addons/authum/modules/qproto/INSTALL.txt
+          (cd dist-win && zip -r ../qproto-win32-authum.zip addons)
+
+      - name: Upload to the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
+          gh release upload $tag qproto-win32-authum.zip --clobber
