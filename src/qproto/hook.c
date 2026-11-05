@@ -21,6 +21,7 @@
  */
 
 #include <qproto/hook.h>
+#include <qproto/host.h>
 #include <qproto/authorizers.h>
 #include <qproto/client/auth/kind.h>
 #include <qproto/logger.h>
@@ -45,6 +46,8 @@ static cmd_argv_fn g_cmd_argv;
 static info_value_for_key_fn g_info_value_for_key;
 static cvar_variable_string_fn g_cvar_variable_string;
 static authum_usize_t g_network_userid_offset = 0x4a90u;
+static authum_usize_t g_steam_id_offset = 4u;
+static authum_usize_t g_client_ip_offset = 0xcu;
 
 /* AUTH_IDTYPE from engine's userid.h: STEAM=1, VALVE=2, LOCAL=3. */
 enum
@@ -139,13 +142,16 @@ hook_server_port(void)
 {
     static const authum_char_t *const names[] = {"ip_hostport", "hostport", "port"};
 
-    if (!g_cvar_variable_string)
-    {
-        return 0u;
-    }
     for (authum_usize_t i = 0; i < sizeof names / sizeof names[0]; i++)
     {
-        const authum_char_t *value = g_cvar_variable_string(names[i]);
+        authum_char_t buf[256] = {0};
+        const authum_char_t *value =
+            g_cvar_variable_string
+                ? g_cvar_variable_string(names[i])
+                : (authum_engine_cvar_copy(authum_host_get_engine(&g_qproto_host), names[i], buf,
+                                           sizeof buf)
+                       ? buf
+                       : authum_null);
         authum_i32_t port = 0;
 
         if (value)
@@ -169,11 +175,21 @@ hook_vellum_context(qproto_authdata_t *authdata, authum_u32_t ips[QPROTO_VELLUM_
         authdata->server_ips = g_qproto_config.vellum_server_ips;
         authdata->server_ip_count = g_qproto_config.vellum_server_ip_count;
     }
-    else if (g_cvar_variable_string)
+    else
     {
-        authdata->server_ips = ips;
-        authdata->server_ip_count =
-            qproto_vellum_parse_ip_list(g_cvar_variable_string("ip"), ips, 1u);
+        authum_char_t buf[256] = {0};
+        const authum_char_t *ip =
+            g_cvar_variable_string
+                ? g_cvar_variable_string("ip")
+                : (authum_engine_cvar_copy(authum_host_get_engine(&g_qproto_host), "ip", buf,
+                                           sizeof buf)
+                       ? buf
+                       : authum_null);
+        if (ip)
+        {
+            authdata->server_ips = ips;
+            authdata->server_ip_count = qproto_vellum_parse_ip_list(ip, ips, 1u);
+        }
     }
     authdata->server_port = hook_server_port();
     authdata->now = authum_time_now_seconds();
@@ -185,26 +201,50 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
     int protocol = 0;
     const char *sxei_hid_hex = authum_null;
 
-    authum_logger_info(&g_qproto_logger, "hook fired: client=%p authBuf=%p len=%d", client,
-                       (void *)auth_buf, len);
+    authum_logger_info(&g_qproto_logger, "hook fired: len=%d", len);
 
-    if (g_cmd_argv)
+    char protbuf[2048] = {0}, userbuf[2048] = {0}, hidbuf[2048] = {0};
     {
-        char *protinfo = g_cmd_argv(3);
-        char *userinfo = g_cmd_argv(4);
+        const authum_engine_t *engine = authum_host_get_engine(&g_qproto_host);
+        char *protinfo =
+            g_cmd_argv
+                ? g_cmd_argv(3)
+                : (authum_engine_cmd_copy_argv(engine, 3, protbuf, sizeof protbuf) ? protbuf
+                                                                                   : authum_null);
+        char *userinfo =
+            g_cmd_argv
+                ? g_cmd_argv(4)
+                : (authum_engine_cmd_copy_argv(engine, 4, userbuf, sizeof userbuf) ? userbuf
+                                                                                   : authum_null);
 
         authum_logger_info(&g_qproto_logger, "Cmd_Argv(3) protinfo = '%s'",
                            protinfo ? protinfo : "(null)");
         authum_logger_info(&g_qproto_logger, "Cmd_Argv(4) userinfo = '%s'",
                            userinfo ? userinfo : "(null)");
-        if (g_info_value_for_key && protinfo)
+        if (protinfo)
         {
             char key_cdkey[] = "cdkey";
             char key_raw[] = "raw";
             char key_prot[] = "prot";
-            char *cdkey = g_info_value_for_key(protinfo, key_cdkey);
-            char *raw = g_info_value_for_key(protinfo, key_raw);
-            char *prot = g_info_value_for_key(protinfo, key_prot);
+            char cdkeybuf[2048] = {0}, rawbuf[2048] = {0}, protvalue[2048] = {0};
+            char *cdkey = g_info_value_for_key
+                              ? g_info_value_for_key(protinfo, key_cdkey)
+                              : (authum_engine_info_copy_value(engine, protinfo, key_cdkey,
+                                                               cdkeybuf, sizeof cdkeybuf)
+                                     ? cdkeybuf
+                                     : authum_null);
+            char *raw = g_info_value_for_key
+                            ? g_info_value_for_key(protinfo, key_raw)
+                            : (authum_engine_info_copy_value(engine, protinfo, key_raw, rawbuf,
+                                                             sizeof rawbuf)
+                                   ? rawbuf
+                                   : authum_null);
+            char *prot = g_info_value_for_key
+                             ? g_info_value_for_key(protinfo, key_prot)
+                             : (authum_engine_info_copy_value(engine, protinfo, key_prot, protvalue,
+                                                              sizeof protvalue)
+                                    ? protvalue
+                                    : authum_null);
 
             authum_logger_info(&g_qproto_logger, "protinfo cdkey='%s' (len=%d)", cdkey ? cdkey : "",
                                cdkey ? (int)authum_cstr_len(cdkey) : -1);
@@ -218,11 +258,16 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
                 protocol = number;
             }
         }
-        if (g_info_value_for_key && userinfo)
+        if (userinfo)
         {
             char key_hid[] = "*HID";
 
-            sxei_hid_hex = g_info_value_for_key(userinfo, key_hid);
+            sxei_hid_hex = g_info_value_for_key
+                               ? g_info_value_for_key(userinfo, key_hid)
+                               : (authum_engine_info_copy_value(engine, userinfo, key_hid, hidbuf,
+                                                                sizeof hidbuf)
+                                      ? hidbuf
+                                      : authum_null);
         }
     }
 
@@ -233,11 +278,15 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
     authum_logger_info(&g_qproto_logger, "native Steam_NotifyClientConnect returned %d", result);
 
     authum_byte_t *base = (authum_byte_t *)client + g_network_userid_offset;
-    authum_u32_t client_ip = *(authum_u32_t *)(base + 0xc);
+    authum_u32_t client_ip = *(authum_u32_t *)(base + g_client_ip_offset);
+    const authum_byte_t *ip_bytes = (const authum_byte_t *)&client_ip;
+    authum_logger_info(&g_qproto_logger, "clientip=%u.%u.%u.%u", (unsigned)ip_bytes[0],
+                       (unsigned)ip_bytes[1], (unsigned)ip_bytes[2], (unsigned)ip_bytes[3]);
 
     if (result)
     {
-        authum_u32_t native_steam_id = (authum_u32_t)(*(authum_u64_t *)(base + 0x4) & 0xFFFFFFFFu);
+        authum_u32_t native_steam_id =
+            (authum_u32_t)(*(authum_u64_t *)(base + g_steam_id_offset) & 0xFFFFFFFFu);
         qproto_client_auth_kind_t kind = (native_steam_id <= QPROTO_STEAM_ID_PENDING)
                                              ? qproto_client_auth_kind_steam_pending
                                              : qproto_client_auth_kind_steam;
@@ -251,7 +300,7 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
 
             final_steam_id = client_ip ^ QPROTO_IPGEN_KEY;
             *(authum_i32_t *)(base + 0x0) = auth_id_type;
-            *(authum_u64_t *)(base + 0x4) = (authum_u64_t)final_steam_id;
+            *(authum_u64_t *)(base + g_steam_id_offset) = (authum_u64_t)final_steam_id;
             authum_logger_info(
                 &g_qproto_logger,
                 "native Steam auth ok (%s), cid=%d overrides id -> idtype=%d steamid=%u",
@@ -350,7 +399,7 @@ qproto_steam_notify_client_connect_hook(void *client, char *auth_buf, int len)
     }
 
     *(authum_i32_t *)(base + 0x0) = auth_id_type;
-    *(authum_u64_t *)(base + 0x4) = (authum_u64_t)final_steam_id;
+    *(authum_u64_t *)(base + g_steam_id_offset) = (authum_u64_t)final_steam_id;
 
     authum_logger_info(&g_qproto_logger, "emulated auth ok (%s), cid=%d -> idtype=%d, steamid=%u",
                        qproto_client_auth_kind_name(kind), (int)cid, auth_id_type, final_steam_id);
@@ -390,20 +439,30 @@ qproto_hook_install(void)
 
     authum_ptr sym = qproto_engine_resolve("Steam_NotifyClientConnect", &via_dynsym);
 
+    qproto_engine_layout_info_t windows_layout;
+    const qproto_engine_layout_info_t *layout;
     if (authum_null_eq(sym))
     {
-        authum_logger_info(&g_qproto_logger, "resolve(Steam_NotifyClientConnect) FAILED");
-        return 0;
+        sym = qproto_engine_find_windows(&windows_layout);
+        if (authum_null_eq(sym))
+        {
+            authum_logger_info(&g_qproto_logger, "resolve(Steam_NotifyClientConnect) FAILED");
+            return 0;
+        }
+        layout = &windows_layout;
+    }
+    else
+    {
+        layout = qproto_engine_select_layout(g_qproto_config.engine_layout, via_dynsym);
     }
 
-    const qproto_engine_layout_info_t *layout =
-        qproto_engine_select_layout(g_qproto_config.engine_layout, via_dynsym);
-
     g_network_userid_offset = layout->network_userid_offset;
+    g_steam_id_offset = layout->steam_id_offset;
+    g_client_ip_offset = layout->client_ip_offset;
     authum_logger_info(&g_qproto_logger,
-                       "engine layout: %s (override=%s, viaDynsym=%d) network_userid=+0x%lx",
+                       "engine layout: %s (override=%s, viaDynsym=%d) network_userid=+0x%x",
                        layout->name, qproto_engine_layout_name(g_qproto_config.engine_layout),
-                       via_dynsym, (unsigned long)g_network_userid_offset);
+                       via_dynsym, (unsigned)g_network_userid_offset);
 
     g_real = (steam_notify_client_connect_fn)sym;
 
@@ -412,10 +471,12 @@ qproto_hook_install(void)
         (info_value_for_key_fn)qproto_engine_resolve("Info_ValueForKey", authum_null);
     g_cvar_variable_string =
         (cvar_variable_string_fn)qproto_engine_resolve("Cvar_VariableString", authum_null);
-    authum_logger_info(&g_qproto_logger, "Cmd_Argv=%p Info_ValueForKey=%p Cvar_VariableString=%p",
-                       (void *)g_cmd_argv, (void *)g_info_value_for_key,
-                       (void *)g_cvar_variable_string);
-    if (!g_cvar_variable_string && g_qproto_config.vellum_server_ip_count == 0u)
+    authum_logger_info(&g_qproto_logger,
+                       "engine exports: Cmd_Argv=%d Info_ValueForKey=%d Cvar_VariableString=%d",
+                       g_cmd_argv != authum_null, g_info_value_for_key != authum_null,
+                       g_cvar_variable_string != authum_null);
+    if (!g_cvar_variable_string && !authum_host_get_engine(&g_qproto_host) &&
+        g_qproto_config.vellum_server_ip_count == 0u)
     {
         authum_logger_info(&g_qproto_logger,
                            "Vellum: server address unknown - tickets are not tied to this "
@@ -427,7 +488,7 @@ qproto_hook_install(void)
         authum_logger_info(&g_qproto_logger, "detour on Steam_NotifyClientConnect FAILED");
         return 0;
     }
-    authum_logger_info(&g_qproto_logger, "hook installed on Steam_NotifyClientConnect @ %p", sym);
+    authum_logger_info(&g_qproto_logger, "hook installed on Steam_NotifyClientConnect");
     return 1;
 }
 
