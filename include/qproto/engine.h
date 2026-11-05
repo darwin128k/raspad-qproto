@@ -24,6 +24,8 @@ typedef struct qproto_engine_layout_info
 {
     qproto_engine_layout_t layout;
     authum_usize_t network_userid_offset;
+    authum_usize_t steam_id_offset;
+    authum_usize_t client_ip_offset;
     authum_usize_t remote_address_offset; /* client_t::netchan.remote_address */
     const authum_char_t *name;
 } qproto_engine_layout_info_t;
@@ -40,6 +42,10 @@ qproto_engine_resolve(const authum_char_t *symbol, authum_i32_t *out_via_dynsym)
 const qproto_engine_layout_info_t *
 qproto_engine_select_layout(qproto_engine_layout_t override_layout,
                             authum_i32_t resolved_via_dynsym);
+
+/* Resolve the supported Windows function and extract its layout; null on failure. */
+authum_ptr
+qproto_engine_find_windows(qproto_engine_layout_info_t *layout);
 
 const authum_char_t *
 qproto_engine_layout_name(qproto_engine_layout_t layout);

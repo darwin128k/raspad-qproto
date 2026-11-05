@@ -25,6 +25,10 @@
 | `1.0.0` / `master` | Metamod-P plugin `qproto_i386.so` |
 | `2.0.0` | Authum client module `qproto.so` (pure C11, this line) |
 
+## Windows engine support
+
+Windows HLDS build 8684, the tested 2012 engine, and build 10210 (October 2024) have matching signatures. Linux builds 8684 and 10211 use their measured client layouts. Steam and non-Steam clients connected during LAN tests on Windows 8684 and 10210 and Linux 10211. The RevEmu authorization path was confirmed on Windows 8684; on the two 2024 builds the engine accepted both tested clients as Steam. Other engine builds require a matching signature or symbol and a compatible client layout. The module requires an Authum host with module ABI 3.3.0 or newer.
+
 ## Install (Authum)
 
 1. Build `qproto.so` (below) or take a CI artifact.

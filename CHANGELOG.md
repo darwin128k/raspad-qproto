@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Windows HLDS 8684, the tested 2012 engine, and build 10210 signature detection, with USERID layout read from engine code.
+
+
 ## [3.0.0] - 2026-11-05
 
 ### Changed
