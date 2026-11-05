@@ -65,3 +65,58 @@ jobs:
           name: qproto-linux32-authum
           path: qproto-linux32-authum.zip
           if-no-files-found: error
+
+  windows:
+    name: Windows i686 (MSYS2 MinGW)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install MSYS2 MINGW32
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW32
+          update: true
+          install: >-
+            mingw-w64-i686-gcc
+            mingw-w64-i686-cmake
+            mingw-w64-i686-ninja
+            zip
+
+      - name: Build
+        run: |
+          cmake -S . -B build-win32 -G Ninja -DCMAKE_BUILD_TYPE=Release
+          cmake --build build-win32 -j"$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build-win32 --output-on-failure
+
+      - name: Pack Authum module layout
+        run: |
+          rm -rf dist-win && mkdir -p dist-win/addons/authum/modules/qproto
+          cp build-win32/modules/qproto/qproto.dll dist-win/addons/authum/modules/qproto/qproto.dll
+          cp qproto.cfg dist-win/addons/authum/modules/qproto/qproto.cfg
+          printf 'qproto\n' > dist-win/addons/authum/modules.list.example
+          cat > dist-win/addons/authum/modules/qproto/INSTALL.txt <<'EOF'
+          Unpack into the game dir so paths match Authum:
+
+            addons\authum\modules\qproto\qproto.dll
+            addons\authum\modules\qproto\qproto.cfg
+
+          Ensure Authum is installed, then add a line to addons\authum\modules.list:
+            qproto
+          EOF
+          sed -i 's/^          //' dist-win/addons/authum/modules/qproto/INSTALL.txt
+          (cd dist-win && zip -r ../qproto-win32-authum.zip addons)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: qproto-win32-authum
+          path: qproto-win32-authum.zip
+          if-no-files-found: error
