@@ -32,10 +32,10 @@ jobs:
       - name: Configure & build
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --target qproto -j"$(nproc)"
+          cmake --build build -j"$(nproc)"
 
       - name: Test
-        run: ctest --test-dir build --output-on-failure || true
+        run: ctest --test-dir build --output-on-failure
 
       - name: Pack Authum module layout
         run: |
